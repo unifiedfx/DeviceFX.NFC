@@ -1,0 +1,122 @@
+using System.Text;
+using DeviceFX.NfcApp.Abstractions;
+using DeviceFX.NfcApp.Model;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using SQLite;
+using Cell = DocumentFormat.OpenXml.Spreadsheet.Cell;
+
+namespace DeviceFX.NfcApp.Services;
+
+public class InventoryService : IInventoryService
+{
+    private readonly SQLiteAsyncConnection database;
+    public InventoryService()
+    {
+        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "phoneInventory.db3");
+        database = new SQLiteAsyncConnection(dbPath);
+        database.CreateTableAsync<PhoneDetails>().Wait();
+    }
+    public async Task AddPhoneAsync(PhoneDetails phone)
+    {
+        await database.InsertOrReplaceAsync(phone);
+    }
+
+    public async Task ClearAsync()
+    {
+        await database.DeleteAllAsync<PhoneDetails>();
+    }
+
+    public async Task<IList<PhoneDetails>> GetPhonesAsync()
+    {
+        return await database.Table<PhoneDetails>().ToListAsync();
+    }
+    
+    public async Task<string?> ExportAsync(string format = "csv")
+    {
+        var records = await database.Table<PhoneDetails>().ToListAsync();
+        if(records == null || records.Count == 0) return null;
+        string fileName = $"Export_{DateTime.Now:yyyyMMddHHmmss}.{format}";
+        string filePath = Path.Combine(FileSystem.Current.CacheDirectory, fileName);
+        if (format == "csv")
+        {
+            // Manually create CSV content
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Id,Mac,Pid,WifiMac,Serial,Vid,TagSerial,NfcVersion,AssetTag,Latitude,Longitude,Postcode,Country,Updated");
+            foreach (var record in records)
+            {
+                sb.AppendLine($"\"{record.Id}\",\"{record.Mac}\",\"{record.Pid}\",\"{record.WifiMac}\",\"{record.Serial}\",\"{record.Vid}\",\"{record.TagSerial}\",\"{record.NfcVersion}\",\"{record.AssetTag}\",\"{record.Latitude}\",\"{record.Longitude}\",\"{record.Postcode}\",\"{record.Country}\",\"{record.Updated:yyyy-MM-ddTHH:mm:ssZ}\"");
+            }
+            await File.WriteAllTextAsync(filePath, sb.ToString());
+        }
+        else if(format == "xlsx")
+        {
+            using (SpreadsheetDocument spreadsheetDocument =
+                   SpreadsheetDocument.Create(filePath, SpreadsheetDocumentType.Workbook))
+            {
+                WorkbookPart workbookPart = spreadsheetDocument.AddWorkbookPart();
+                workbookPart.Workbook = new Workbook();
+
+                WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+                worksheetPart.Worksheet = new Worksheet(new SheetData());
+
+                Sheets sheets = spreadsheetDocument.WorkbookPart.Workbook.AppendChild(new Sheets());
+                Sheet sheet = new Sheet() { Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "Sheet1" };
+                sheets.Append(sheet);
+
+                SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();        
+                Row headerRow = new Row();
+                headerRow.Append(CreateCell("A1", "Id"));
+                headerRow.Append(CreateCell("B1", "Mac"));
+                headerRow.Append(CreateCell("C1", "Pid"));
+                headerRow.Append(CreateCell("D1", "WifiMac"));
+                headerRow.Append(CreateCell("E1", "Serial"));
+                headerRow.Append(CreateCell("F1", "Vid"));
+                headerRow.Append(CreateCell("G1", "TagSerial"));
+                headerRow.Append(CreateCell("H1", "NfcVersion"));
+                headerRow.Append(CreateCell("I1", "AssetTag"));
+                headerRow.Append(CreateCell("J1", "Latitude"));
+                headerRow.Append(CreateCell("K1", "Longitude"));
+                headerRow.Append(CreateCell("L1", "Postcode"));
+                headerRow.Append(CreateCell("M1", "Country"));
+                headerRow.Append(CreateCell("N1", "Updated", CellValues.Date));
+                sheetData.Append(headerRow);
+                uint rowIndex = 2;
+                foreach (var record in records)
+                {
+                    Row dataRow = new Row();
+                    dataRow.Append(CreateCell($"A{rowIndex}", record.Id, CellValues.String));
+                    dataRow.Append(CreateCell($"B{rowIndex}", record.Mac, CellValues.String));
+                    dataRow.Append(CreateCell($"C{rowIndex}", record.Pid, CellValues.String));
+                    if(record.WifiMac != null) dataRow.Append(CreateCell($"D{rowIndex}", record.WifiMac, CellValues.String));
+                    dataRow.Append(CreateCell($"E{rowIndex}", record.Serial, CellValues.String));
+                    if(record.WifiMac != null) dataRow.Append(CreateCell($"F{rowIndex}", record.Vid, CellValues.String));
+                    if(record.TagSerial != null) dataRow.Append(CreateCell($"G{rowIndex}", record.TagSerial, CellValues.String));
+                    if(record.NfcVersion != null) dataRow.Append(CreateCell($"H{rowIndex}", record.NfcVersion, CellValues.String));
+                    if(record.AssetTag != null) dataRow.Append(CreateCell($"I{rowIndex}", record.AssetTag, CellValues.String));
+                    if(record.Latitude != null) dataRow.Append(CreateCell($"J{rowIndex}", record.Latitude, CellValues.String));
+                    if(record.Longitude != null) dataRow.Append(CreateCell($"K{rowIndex}", record.Longitude, CellValues.String));
+                    if(record.Postcode != null) dataRow.Append(CreateCell($"L{rowIndex}", record.Postcode, CellValues.String));
+                    if(record.Country != null) dataRow.Append(CreateCell($"M{rowIndex}", record.Country, CellValues.String));
+                    dataRow.Append(CreateCell($"N{rowIndex}", record.Updated.ToString("o"), CellValues.Date));
+                    sheetData.Append(dataRow);
+                    rowIndex++;
+                }
+                workbookPart.Workbook.Save();
+                spreadsheetDocument.Save();
+            }
+        }
+        else return null;
+        return filePath;
+        Cell CreateCell(string cellReference, string value, CellValues? dataType = null)
+        {
+            return new Cell()
+            {
+                CellReference = cellReference,
+                DataType = dataType ?? CellValues.String,
+                CellValue = new CellValue(value)
+            };
+        }
+    }
+}

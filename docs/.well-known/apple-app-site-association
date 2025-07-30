@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["L9GWB5594Z.com.devicefx.nfc"],
+        "components": [
+        {
+          "/":"/*"
+        },
+        {
+          "/":"/settings"
+        }
+        ]
+      }
+    ]
+  }
+}

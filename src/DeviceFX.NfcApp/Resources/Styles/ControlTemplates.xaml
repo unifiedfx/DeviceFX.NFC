@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <ControlTemplate x:Key="ToggleRadioButtonTemplate">
+        <Border Stroke="Transparent"
+                StrokeThickness="2"
+                StrokeShape="RoundRectangle 10"
+                BackgroundColor="{StaticResource Gray100}">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CheckedStates">
+                        <VisualState x:Name="Checked">
+                            <VisualState.Setters>
+                                <Setter Property="Stroke"
+                                        Value="{StaticResource BlackBrush}" />
+                                <Setter Property="BackgroundColor"
+                                        Value="{StaticResource Gray200}" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Unchecked">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor"
+                                        Value="{StaticResource White}" />
+                                <Setter Property="Stroke"
+                                        Value="{StaticResource Gray300Brush}" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </VisualStateManager.VisualStateGroups>
+            <ContentPresenter/>
+        </Border>
+    </ControlTemplate>
+</ResourceDictionary>

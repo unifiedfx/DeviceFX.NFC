@@ -1,0 +1,19 @@
+mode: Mainline
+branches:
+  main:
+    regex: ^main$
+    increment: Patch
+    prevent-increment-of-merged-branch-version: false
+    tag: ''
+  develop:
+    increment: Patch
+    is-mainline: true
+    regex: ^develop$
+    prevent-increment-of-merged-branch-version: false
+    tag: ''
+
+update-build-number: false
+assembly-versioning-scheme: MajorMinorPatch
+ignore:
+  sha: []
+commit-message-incrementing: Enabled

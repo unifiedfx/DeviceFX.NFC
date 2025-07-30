@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                        xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                        Priority="20"
+                        Title="Search"
+                        x:Class="DeviceFX.NfcApp.Views.SearchPage">
+    <ContentPage.Content>
+        <Grid Padding="15" RowDefinitions="Auto, Auto, *, 50">
+            <Label Text="User/Workspace to assign" FontSize="20" VerticalOptions="Center"/>
+            <StackLayout Grid.Row="1">
+                <SearchBar x:Name="searchBar"
+                           Unfocused="SearchBar_OnUnfocused"
+                           Text="{Binding SearchInput}"
+                           BackgroundColor="White"
+                           Placeholder="Search user/workspace..." 
+                           SearchCommandParameter="{Binding SearchInput}"
+                           SearchCommand="{Binding SearchCommand}" >
+                    <SearchBar.Behaviors>
+                        <toolkit:EventToCommandBehavior
+                            EventName="TextChanged"
+                            CommandParameter="{Binding SearchInput}"
+                            Command="{Binding SearchCommand}"
+                        />
+                    </SearchBar.Behaviors>
+                </SearchBar>
+            </StackLayout>
+            <CollectionView Grid.Row="2" x:Name="SearchResults"
+                            SelectionChanged="SearchResults_OnSelectionChanged"
+                            Scrolled="SearchResults_OnScrolled"
+                            SelectedItem="{Binding SearchSelection}"
+                            ItemsSource="{Binding SearchResults}"
+                            SelectionMode="Single">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <StackLayout>
+                            <Label
+                                FontSize="22"
+                                Padding="5,5"
+                                VerticalTextAlignment="Center"
+                                Text="{Binding .}"
+                                TextColor="blue">
+                            </Label>
+                        </StackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="No search results..."/>
+                </CollectionView.EmptyView>
+            </CollectionView>
+            <shared:NavigationButtonsView Grid.Row="3" BackCommand="{Binding BackCommand}" NextCommand="{Binding SelectedCommand}"/>
+        </Grid>
+    </ContentPage.Content>
+</shared:StepContentPage>

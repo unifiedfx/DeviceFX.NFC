@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                 xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                 Priority="10"
+                 Title="DeviceFX NFC"
+                 x:Class="DeviceFX.NfcApp.Views.StartPage">
+    <ContentPage.Resources>
+        <ResourceDictionary Source="../Resources/Styles/CustomStyles.xaml" />
+        <Style TargetType="RadioButton">
+            <Setter Property="ControlTemplate"
+                    Value="{StaticResource ToggleRadioButtonTemplate}" />
+        </Style>
+    </ContentPage.Resources>
+    <ContentPage.Content>
+        <Grid Padding="15"
+              RowDefinitions="Auto, *, 50, 50"
+              RowSpacing="0">
+            <StackLayout
+                Spacing="10"
+                Padding="0,20,0,20"
+                RadioButtonGroup.SelectedValue="{Binding SelectedMode}"
+                RadioButtonGroup.GroupName="Start">
+                <RadioButton Value="Search" x:Name="ProvisionRadioButton">
+                    <RadioButton.Content>
+                        <VerticalStackLayout>
+                            <Label StyleClass="Centered, Heading">Provision</Label>
+                            <Label StyleClass="Centered, Subheading">Add to Webex</Label>
+                        </VerticalStackLayout>
+                    </RadioButton.Content>
+                </RadioButton>
+                <RadioButton Value="Onboarding" x:Name="OnboardingRadioButton">
+                    <RadioButton.Content>
+                        <VerticalStackLayout>
+                            <Label StyleClass="Centered, Heading">Onboarding</Label>
+                            <Label StyleClass="Centered, Subheading">Set onboarding mode</Label>
+                        </VerticalStackLayout>
+                    </RadioButton.Content>
+                </RadioButton>
+                <RadioButton Value="Inventory" x:Name="InventoryRadioButton">
+                    <RadioButton.Content>
+                        <VerticalStackLayout>
+                            <Label StyleClass="Centered, Heading">Inventory</Label>
+                            <Label StyleClass="Centered, Subheading">Export phone details</Label>
+                        </VerticalStackLayout>
+                    </RadioButton.Content>
+                </RadioButton>
+            </StackLayout>
+            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference ProvisionRadioButton}}">
+                <Label StyleClass="Heading" FontAttributes="Bold">Add to Webex</Label>
+                <Label StyleClass="Subheading">Login to Webex and search for a user or workplace and assign the scanned phone</Label>
+            </StackLayout>
+            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference OnboardingRadioButton}}">
+                <Label StyleClass="Heading">Set onboarding mode</Label>
+                <Label StyleClass="Subheading">Set the onboarding mode of the scanned phone, e.g. CUCM/Cloud first or save an Activation Code (even when in the box)</Label>
+            </StackLayout>
+            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference InventoryRadioButton}}">
+                <Label StyleClass="Heading">Export phone details</Label>
+                <Label StyleClass="Subheading">Manage the list of scanned phones including exporting to a CSV file that can then be used to add to any system such as CUCM via BAT Template</Label>
+            </StackLayout>
+            <Button Grid.Row="3" Text="Start" FontSize="20" Command="{Binding NextCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+        </Grid>
+    </ContentPage.Content>
+</shared:StepContentPage>

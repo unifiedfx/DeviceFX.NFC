@@ -1,0 +1,10 @@
+steps:
+  - task: gitversion/setup@3
+    inputs:
+      versionSpec: '5.x'
+    displayName: 'Setup GitVersion'
+
+  - task: gitversion/execute@0
+    name: GitVersion
+    displayName: 'Determine next Semantic Version'
+    

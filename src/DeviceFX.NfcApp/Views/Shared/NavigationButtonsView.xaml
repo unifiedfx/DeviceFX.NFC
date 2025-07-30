@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Name="This"
+             x:Class="DeviceFX.NfcApp.Views.Shared.NavigationButtonsView">
+    <Grid ColumnSpacing="10" ColumnDefinitions="*,*">
+        <Button Text="{Binding BackButtonText, Source={x:Reference This}}"
+                FontSize="20"
+                Command="{Binding BackCommand, Source={x:Reference This}}"
+                CommandParameter="{Binding BackParameter, Source={x:Reference This}}"
+                Grid.Column="0"
+                HorizontalOptions="FillAndExpand"/>
+        <Button
+            FontSize="20"
+            Text="{Binding NextButtonText, Source={x:Reference This}}"
+            ImageSource="{Binding NextButtonImageSource, Source={x:Reference This}}"
+            Command="{Binding NextCommand, Source={x:Reference This}}"
+            CommandParameter="{Binding NextParameter, Source={x:Reference This}}"
+            Grid.Column="1"
+            HorizontalOptions="FillAndExpand"/>
+    </Grid>    
+</ContentView>

@@ -1,0 +1,284 @@
+parameters:
+  - name: VmImage
+    type: string
+    default: 'macOS-15'
+
+trigger:
+  - main
+  - develop
+
+variables:
+  - group: 'DeviceFX NFC Variables'
+  - name: 'ProvProfileSecureFile'
+    value: 'DeviceFX_NFC_App_Store_Profile.mobileprovision'
+  - name: 'IsRelease'
+    value: false
+  - name: 'Configuration'
+    value: 'Debug'
+  - ${{ if eq(split(variables['Build.SourceBranch'], '/')[2], 'main') }}:
+      - name: 'EnvironmentName'
+        value: 'Production'
+      - name: 'Configuration'
+        value: 'Release'
+      - name: 'AndroidTrack'
+        value: 'production'
+      - name: 'AppleTrack'
+        value: 'TestFlight'
+      - name: 'IsRelease'
+        value: true
+  - ${{ else }}:
+      - name: 'EnvironmentName'
+        value: 'Beta'
+      - name: 'AndroidTrack'
+        value: 'beta'
+      - name: 'AppleTrack'
+        value: 'TestFlight'
+    
+jobs:
+  - job: BuildJob
+    pool:
+      vmImage: ${{ parameters.VmImage }}
+      demands:
+        - MSBuild
+    steps:
+      - checkout: self
+        fetchDepth: 0
+        persistCredentials: true
+        displayName: 'Checkout Sources'
+
+      - template: gitversion-template.yml
+
+      - script: |
+          echo IsRelease: '$(IsRelease)'
+          echo ProvProfileSecureFile: '$(ProvProfileSecureFile)'
+          echo CodesignKey: '$(CodesignKey)'
+          echo SemVer: '$(GitVersion.SemVer)'
+          echo AssemblySemVer: '$(GitVersion.AssemblySemVer)'
+          echo AssemblySemFileVer: '$(GitVersion.AssemblySemFileVer)'
+          echo BuildSemVer: '$(BuildSemVer)'
+
+      - task: UseDotNet@2
+        inputs:
+          packageType: 'sdk'
+          version: '$(DotNetVersion)'
+
+      - task: PowerShell@2
+        displayName: Select Xcode Version
+        inputs:
+          targetType: 'inline'
+          script: |
+            echo Mac OS version:
+            sw_vers -productVersion
+            echo Installed Xcode versions:
+            ls /Applications | grep 'Xcode'
+            echo currently selected xcode:
+            xcrun xcode-select --print-path
+            echo selecting latest xcode...
+            sudo xcode-select -s /Applications/Xcode_$(XcodeVersion).app
+            xcrun xcode-select --print-path
+            xcodebuild -version
+
+      - task: Bash@3
+        displayName: Install iOS Platform
+        inputs:
+          targetType: 'inline'
+          script: |
+            xcodebuild -downloadPlatform iOS -buildVersion $(iOSPlatform)
+            xcrun simctl list devices
+
+      - task: Bash@3
+        displayName: Install MAUI
+        inputs:
+          targetType: 'inline'
+          script: |
+            dotnet nuget locals all --clear
+            dotnet workload install maui --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json
+            dotnet workload install android ios maui wasm-tools --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json    
+
+      - task: Bash@3
+        displayName: Restore nuget
+        inputs:
+          targetType: 'inline'
+          script: |
+            dotnet restore DeviceFX.NFCApp.sln
+
+      - task: InstallAppleCertificate@2
+        inputs:
+          certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
+          certPwd: '$(iOSCertPassword)'
+          keychain: 'temp'
+
+      - task: InstallAppleProvisioningProfile@1
+        inputs:
+          provisioningProfileLocation: 'secureFiles'
+          provProfileSecureFile: $(ProvProfileSecureFile)
+
+      - task: Bash@3
+        displayName: Build iOS App
+        name: BuildIOSApp
+        inputs:
+          targetType: 'inline'
+          script: >-
+            dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
+            -f net9.0-ios -c Release
+            -p:Version=$(GitVersion.SemVer)
+            -p:AssemblyVersion=$(GitVersion.AssemblySemVer)
+            -p:FileVersion=$(GitVersion.AssemblySemFileVer)
+            -p:ApplicationDisplayVersion=$(GitVersion.SemVer)
+            -p:ApplicationVersion=$(GitVersion.SemVer)
+            -p:CodesignKey="$(CodesignKey)"
+
+      - task: CopyFiles@2
+        displayName: Copy iOS app and ipa files
+        inputs:
+          Contents: |
+            **/*.app
+            **/*.ipa
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/ios'
+          flattenFolders: true
+
+      - publish: $(Build.ArtifactStagingDirectory)/ios
+        displayName: Publish iOS artifacts
+        artifact: drop_ios
+
+      - task: DownloadSecureFile@1
+        displayName: Download keystore file
+        name: keystore
+        inputs:
+          secureFile: '$(KeyStore-FileName)'
+
+      - task: CmdLine@2
+        displayName: Move Keystore to Working Directory
+        inputs:
+          script: |
+            mv $(keystore.secureFilePath) $(System.DefaultWorkingDirectory)
+
+      - task: Bash@3
+        displayName: Build Android App
+        name: BuildAndroidApp
+        inputs:
+          targetType: 'inline'
+          script: >-
+            dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
+            -f net9.0-android
+            -c Release
+            -p:Version=$(GitVersion.SemVer)
+            -p:AssemblyVersion=$(GitVersion.AssemblySemVer)
+            -p:FileVersion=$(GitVersion.AssemblySemFileVer)
+            -p:ApplicationDisplayVersion=$(GitVersion.SemVer)
+            -p:AndroidSigningKeyPass=$(KeyStore-Password)
+            -p:AndroidSigningStorePass=$(KeyStore-Password)
+            -p:AndroidSigningKeyStore=$(System.DefaultWorkingDirectory)\\$(KeyStore-FileName)
+            -p:AndroidSigningKeyAlias=$(KeyStore-Alias)
+            -p:AndroidKeyStore=true
+
+      - task: CopyFiles@2
+        displayName: Copy Android apk and aab files
+        inputs:
+          Contents: |
+            **/*Signed.apk
+            **/*Signed.aab
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/android'
+          flattenFolders: true
+
+      - publish: $(Build.ArtifactStagingDirectory)/android
+        displayName: Publish Android artifacts
+        artifact: drop_android
+
+      - script: |
+          git config user.email "dev@unifiedfx.com"
+          git config user.name "UnifiedFX"
+        displayName: 'Set Git Identity'
+
+      - task: GitHubRelease@1
+        condition: and(succeeded(), eq(variables.IsRelease, 'true'))
+        inputs:
+          gitHubConnection: 'UnifiedFX GitHub'
+          repositoryName: '$(Build.Repository.Name)'
+          action: 'create'
+          target: '$(Build.SourceVersion)'
+          tagSource: 'userSpecifiedTag'
+          tag: v$(GitVersion.SemVer)
+          title: '$(ProductName) Release v$(GitVersion.SemVer)'
+          addChangeLog: true
+          assets: |
+            '$(Build.ArtifactStagingDirectory)/ios/**/*.ipa'
+            '$(Build.ArtifactStagingDirectory)/android/**/*Signed.aab'
+        displayName: 'Create GitHub Release'
+
+  - deployment: DeviceFXNfcMobileAppleDeployment
+    dependsOn: BuildJob
+    pool:
+      vmImage: ${{ parameters.VmImage }}
+      demands:
+        - MSBuild
+    displayName: DeviceFX NFC Mobile Apple Deployment
+    environment: DeviceFX NFC Mobile $(EnvironmentName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - checkout: self
+              persistCredentials: true
+              displayName: 'Checkout Sources'
+
+            - script: |
+                echo 'ApplicationId: $(ApplicationId)'
+                echo 'AppSpecificId: $(AppSpecificId)'
+
+            - task: InstallAppleCertificate@2
+              inputs:
+                certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
+                certPwd: '$(iOSCertPassword)'
+                keychain: 'temp'
+
+            - task: AppStoreRelease@1
+              inputs:
+                serviceEndpoint: 'UnifiedFX App Store'
+                releaseTrack: '$(AppleTrack)'
+                appIdentifier: '$(ApplicationId)'
+                appType: 'iOS'
+                ipaPath: '$(Agent.BuildDirectory)/**/*.ipa'
+                appSpecificId: '$(AppSpecificId)'
+
+  - deployment: DeviceFXNfcMobileAndroidDeployment
+    dependsOn: BuildJob
+    pool:
+      vmImage: ${{ parameters.VmImage }}
+      demands:
+        - MSBuild
+    displayName: DeviceFX NFC Mobile Android Deployment
+    environment: DeviceFX NFC Mobile $(EnvironmentName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: DownloadSecureFile@1
+              displayName: Download keystore file
+              name: keystore
+              inputs:
+                secureFile: '$(KeyStore-FileName)'
+
+            - script: |
+                echo 'ApplicationId: $(ApplicationId)'
+                echo 'AndroidTrack: $(AndroidTrack)'
+                original='$(ApplicationId)'
+                modified="${original//-/_}"
+                echo "##vso[task.setvariable variable=ApplicationIdAndroid;]$modified"
+                echo 'ApplicationIdAndroid: $(ApplicationIdAndroid)'
+
+            - task: CmdLine@2
+              displayName: Move Keystore to Working Directory
+              inputs:
+                script: |
+                  mv $(keystore.secureFilePath) $(System.DefaultWorkingDirectory)
+
+            - task: GooglePlayRelease@4
+              inputs:
+                serviceConnection: 'UnifiedFX Google Play'
+                applicationId: '$(ApplicationIdAndroid)'
+                action: 'SingleBundle'
+                bundleFile: '$(Agent.BuildDirectory)/**/*Signed.aab'
+                track: $(AndroidTrack)
+                changesNotSentForReview: true
+                rescueChangesNotSentForReview: true

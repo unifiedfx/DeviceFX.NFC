@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.devicefx.nfc",
+      "sha256_cert_fingerprints": [
+        "78:B0:C8:0A:CC:CD:2A:E4:3C:9D:E3:1A:D8:35:C7:67:31:22:14:44:1F:24:85:AE:AB:A4:12:E2:0C:45:3B:CB",
+        "17:2C:70:15:74:ED:E9:35:62:0D:97:C5:CF:B6:D2:F3:B6:A6:2A:5A:FF:40:49:5B:62:B1:FB:26:CE:3B:3B:FF"
+      ]
+    }
+  }
+]

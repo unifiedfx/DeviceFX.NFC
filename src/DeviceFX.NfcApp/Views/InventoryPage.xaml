@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                        Priority="20"
+                        Title="Inventory"
+                        x:Class="DeviceFX.NfcApp.Views.InventoryPage">
+    <ContentPage.Content>
+        <Grid Padding="15" RowDefinitions="Auto, *, 50">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <Button Text="Export" Command="{Binding ShareCommand}" ImageSource="share.png" MaximumHeightRequest="50"></Button>
+                <Label Grid.Column="1" Text="{Binding PhoneList.Count, StringFormat='Total Phones: {0}'}" 
+                       FontSize="Medium"
+                       HorizontalOptions="Center"
+                       FontAttributes="Bold" 
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="2" Text="Clear" Command="{Binding ClearCommand}" MaximumHeightRequest="50"></Button>
+            </Grid>
+            <CollectionView Grid.Row="1" x:Name="SearchResults"
+                            ItemsSource="{Binding PhoneList}"
+                            SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <StackLayout>
+                            <Label
+                                FontSize="22"
+                                Padding="5,5"
+                                VerticalTextAlignment="Center"
+                                Text="{Binding .}"
+                                TextColor="blue">
+                            </Label>
+                        </StackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Label Text="No search results..."/>
+                </CollectionView.EmptyView>
+            </CollectionView>
+            <shared:NavigationButtonsView Grid.Row="2" BackCommand="{Binding BackCommand}" NextButtonText="Scan" NextCommand="{Binding ScanCommand}" NextButtonImageSource="nfc_icon.png" />
+        </Grid>
+    </ContentPage.Content>
+</shared:StepContentPage>

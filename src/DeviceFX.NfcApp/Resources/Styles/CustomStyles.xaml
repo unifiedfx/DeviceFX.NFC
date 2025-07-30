@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Style TargetType="Label" Class="Heading">
+        <Setter Property="FontSize" Value="28"></Setter>
+        <Setter Property="FontAttributes" Value="Bold"></Setter>
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+    </Style>
+    <Style TargetType="Label" Class="Subheading">
+        <Setter Property="FontSize" Value="18"></Setter>
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+    </Style>
+    <Style TargetType="Label" Class="Centered">
+        <Setter Property="HorizontalOptions" Value="Center"></Setter>
+        <Setter Property="VerticalOptions" Value="Center"></Setter>
+    </Style>
+</ResourceDictionary>

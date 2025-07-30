@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                        Priority="20"
+                        Title="Provision"
+                        x:Class="DeviceFX.NfcApp.Views.ProvisionPage">
+    <ContentPage.Content>
+        <Grid Padding="15" RowDefinitions="Auto, *, 50, 50">
+            <shared:NavigationButtonsView Grid.Row="3" 
+                                          BackCommand="{Binding BackCommand}"
+                                          BackParameter="Search"
+                                          NextButtonText="Scan" 
+                                          NextCommand="{Binding ProvisionCommand}" 
+                                          NextButtonImageSource="nfc_icon.png" />
+        </Grid>
+    </ContentPage.Content>
+</shared:StepContentPage>
