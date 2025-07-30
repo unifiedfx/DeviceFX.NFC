@@ -57,5 +57,8 @@
         <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
         <PackageReference Include="UFX.DeviceFX.NFC" Version="1.0.11" />
     </ItemGroup>
-    
+
+    <ItemGroup>
+        <TrimmerRootAssembly Include="Plugin.Maui.BottomSheet" />
+    </ItemGroup>
 </Project>
