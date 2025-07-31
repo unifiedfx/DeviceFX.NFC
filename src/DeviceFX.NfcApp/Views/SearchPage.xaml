@@ -5,7 +5,9 @@
                         xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                         xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
                         Priority="20"
+                        Group="Provision"
                         Title="Search"
+                        HideSoftInputOnTapped="True"
                         x:Class="DeviceFX.NfcApp.Views.SearchPage">
     <ContentPage.Content>
         <Grid Padding="15" RowDefinitions="Auto, Auto, *, 50">

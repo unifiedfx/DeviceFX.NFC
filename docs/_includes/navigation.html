@@ -1,0 +1,16 @@
+<nav>
+    <div class="container">
+        {% assign nav_pages = site.pages | sort: "path" %}  <!-- Sort by path; change to "title" for alpha if preferred -->
+        {% for p in nav_pages %}
+        {% if p.path contains '.md' and p.path != '404.md' %}  <!-- Filter: only .md files, exclude unwanted like 404 -->
+        {% assign lines = p.content | newline_to_br | split: '<br />' %}  <!-- Split raw content into lines (handles \n) -->
+        {% assign extracted_title = p.title %}  <!-- Start with default filename title as fallback -->
+        <div>
+            <a class="btn" {% if page.url == p.url %}style="background: royalblue"{% else %}style="background: darkcyan"{% endif %} href="{{ p.url | relative_url }}">
+                {{ extracted_title | default: "Untitled" }}
+            </a>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</nav>

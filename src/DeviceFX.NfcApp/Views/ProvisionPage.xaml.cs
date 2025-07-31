@@ -4,8 +4,5 @@ namespace DeviceFX.NfcApp.Views;
 
 public partial class ProvisionPage : StepContentPage
 {
-    public ProvisionPage()
-    {
-        InitializeComponent();
-    }
+    public ProvisionPage() => InitializeComponent();
 }

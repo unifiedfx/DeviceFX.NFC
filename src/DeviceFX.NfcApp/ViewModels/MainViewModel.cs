@@ -5,12 +5,12 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
-using DeviceFX.NfcApp.Views;
 using DeviceFX.NfcApp.Views.Shared;
+using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
+public partial class MainViewModel(AppViewModel appViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
 {
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
@@ -22,7 +22,9 @@ public partial class MainViewModel(Operation operation, IEnumerable<StepContentP
     [ObservableProperty]
     [Preference<string>("selected-mode", SelectedProvision)]
     private string selectedMode = SelectedProvision;
-    
+
+    public Operation Operation => operation;
+
     #region Onboarding
 
     [ObservableProperty]
@@ -104,8 +106,41 @@ public partial class MainViewModel(Operation operation, IEnumerable<StepContentP
     public async Task ProvisionAsync()
     {
         // Start NFC Read then provision to Webex
+        if(Operation.State == OperationState.Success)
+        {
+            Operation.State = OperationState.Idle;
+            SearchSelection = null;
+            await NextAsync();
+            return;
+        }
+        operation.Result = null;
+        appViewModel.Title = "Provisioning";
+        operation.State = OperationState.InProgress;
         operation.Onboarding.Clear();
+        operation.Callback = AsyncCallback;
         await deviceService.ScanPhoneAsync(operation);
+        if (operation.State == OperationState.Success)
+        {
+            appViewModel.Title = "Provisioned";
+        }
+        else
+        {
+            appViewModel.Title = "Provision";
+        }
+
+        async ValueTask<List<NdefRecord>> AsyncCallback(Operation op)
+        {
+            await Task.Delay(1000);
+            return [];
+        }
+    }
+
+    [RelayCommand]
+    public async Task ProvisionBackAsync()
+    {
+        Operation.State = OperationState.Idle;
+        SearchSelection = null;
+        await BackAsync();
     }
     #endregion
 
@@ -163,10 +198,11 @@ public partial class MainViewModel(Operation operation, IEnumerable<StepContentP
         ClearCommand.NotifyCanExecuteChanged();
     }
     public bool CanShare() => PhoneList.Count > 0;
-
+    
     [RelayCommand]
-    public async Task SelectionChangedAsync()
+    public async Task PhoneClickedAsync(PhoneDetails phone)
     {
+        SelectedPhone = phone;
         if(SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>();
     }
     #endregion

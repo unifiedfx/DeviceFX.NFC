@@ -1,0 +1,44 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+.main-content {
+  @extend .main-content;
+  max-width: 128rem;
+}
+
+.container { 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.container a {
+  margin: 0 1rem;
+}
+
+.side span { writing-mode: sideways-lr; }
+.side {  min-width: 5rem; }
+.blank1 { width: 20rem; }
+.blank2 { width: 10rem; }
+table.nfc {
+  border-collapse: collapse;
+  border-spacing:0;
+}
+table.nfc td {
+  text-align: center;
+  vertical-align: middle;
+  border-color:black;
+  border-style:solid;
+  border-width:1px;
+}
+.rw {
+  color: black;
+  background-color: #00f200;
+  min-height: 8rem;
+}
+.ro {
+  color: black;
+  background-color: #f2f2f2;
+  min-height: 8rem;
+}

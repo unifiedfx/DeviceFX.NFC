@@ -3,17 +3,101 @@
 <shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                         xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
-                        Priority="20"
+                        xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+                        xmlns:model="clr-namespace:DeviceFX.NfcApp.Model"
+                        xmlns:converters="clr-namespace:DeviceFX.NfcApp.Helpers.Converters"
+                        Priority="30"
+                        Group="Provision"
                         Title="Provision"
                         x:Class="DeviceFX.NfcApp.Views.ProvisionPage">
+    <shared:StepContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary x:Key="NextTextMapper">
+                <x:String x:Key="Success">Done</x:String>
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="NextImageMapper">
+                <x:String x:Key="Success"></x:String>
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="BackTextMapper">
+                <x:String x:Key="Success">Repeat</x:String>
+            </ResourceDictionary>
+            <converters:StringMapperConverter x:Key="NextStringConverter" DefaultValue="Scan"/>
+            <converters:StringMapperConverter x:Key="NextImageConverter" DefaultValue="nfc_icon.png"/>
+            <converters:StringMapperConverter x:Key="BackStringConverter" DefaultValue="Back"/>
+            <toolkit:EnumToBoolConverter x:Key="OperationSuccessConverter">
+                <toolkit:EnumToBoolConverter.TrueValues>
+                    <model:OperationState>Success</model:OperationState>
+                </toolkit:EnumToBoolConverter.TrueValues>
+            </toolkit:EnumToBoolConverter>
+            <toolkit:EnumToBoolConverter x:Key="OperationFailureConverter">
+                <toolkit:EnumToBoolConverter.TrueValues>
+                    <model:OperationState>Failure</model:OperationState>
+                </toolkit:EnumToBoolConverter.TrueValues>
+            </toolkit:EnumToBoolConverter>
+            <toolkit:EnumToBoolConverter x:Key="OperationInProgressConverter">
+                <toolkit:EnumToBoolConverter.TrueValues>
+                    <model:OperationState>InProgress</model:OperationState>
+                </toolkit:EnumToBoolConverter.TrueValues>
+            </toolkit:EnumToBoolConverter>
+        </ResourceDictionary>
+        <Style TargetType="Label">
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="TextColor" Value="Black"></Setter>
+        </Style>
+    </shared:StepContentPage.Resources>
     <ContentPage.Content>
-        <Grid Padding="15" RowDefinitions="Auto, *, 50, 50">
-            <shared:NavigationButtonsView Grid.Row="3" 
-                                          BackCommand="{Binding BackCommand}"
+        <Grid Padding="15" RowDefinitions="Auto, Auto, Auto, *, 50" RowSpacing="10">
+            <Border BackgroundColor="LightGray" StrokeShape="RoundRectangle 10">
+                <VerticalStackLayout Spacing="20" Padding="10">
+                    <Label Text="Webex User/Workspace" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <HorizontalStackLayout>
+                        <Label Text="Name: "></Label>
+                        <Label Text="{Binding SearchSelection.Name}"></Label>
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout>
+                        <Label Text="Number: "></Label>
+                        <Label Text="{Binding SearchSelection.Number}"></Label>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+            <ActivityIndicator Grid.Row="2" Scale="{OnPlatform 1.0, iOS=2.0}"
+                               IsVisible="{Binding Operation.State, Converter={StaticResource OperationInProgressConverter}}"
+                               IsRunning="{Binding Operation.State, Converter={StaticResource OperationInProgressConverter}}"></ActivityIndicator>
+            <Border Grid.Row="2" BackgroundColor="LightGray" StrokeShape="RoundRectangle 10" IsVisible="{Binding Operation.State, Converter={StaticResource OperationSuccessConverter}}">
+                <VerticalStackLayout Padding="10" Spacing="20" IsVisible="{Binding Operation.State, Converter={StaticResource OperationSuccessConverter}}">
+                    <Label Text="Phone" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <HorizontalStackLayout>
+                        <Label Text="Mac: "></Label>
+                        <Label Text="{Binding Operation.Phone.Mac}"></Label>
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout>
+                        <Label Text="Model: "></Label>
+                        <Label Text="{Binding Operation.Phone.Pid}"></Label>
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout>
+                        <Label Text="Serial: "></Label>
+                        <Label Text="{Binding Operation.Phone.Serial}"></Label>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Row="2" BackgroundColor="LightGray" StrokeShape="RoundRectangle 10" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
+                <VerticalStackLayout Padding="10" Spacing="20" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
+                    <Label Text="Error" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <HorizontalStackLayout>
+                        <Label Text="Result: "></Label>
+                        <Label Text="{Binding Operation.Result}" TextColor="Red"></Label>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+            <shared:NavigationButtonsView Grid.Row="4"
+                                          x:Name="NavigationButtons"
+                                          BackCommand="{Binding ProvisionBackCommand}"
                                           BackParameter="Search"
-                                          NextButtonText="Scan" 
+                                          BackButtonText="{Binding Operation.State, Converter={StaticResource BackStringConverter}, ConverterParameter={StaticResource BackTextMapper}, Mode=OneWay}"
+                                          NextButtonText="{Binding Operation.State, Converter={StaticResource NextStringConverter}, ConverterParameter={StaticResource NextTextMapper}, Mode=OneWay}"
                                           NextCommand="{Binding ProvisionCommand}" 
-                                          NextButtonImageSource="nfc_icon.png" />
+                                          NextButtonImageSource="{Binding Operation.State, Converter={StaticResource NextImageConverter}, ConverterParameter={StaticResource NextImageMapper}, Mode=OneWay}" />
         </Grid>
     </ContentPage.Content>
 </shared:StepContentPage>

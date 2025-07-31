@@ -28,6 +28,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 operation.State = OperationState.Success;
                 await SetResult($"Saved to {operation.Phone.Pid}", true);
             }
+            else await SetResult($"Cancelled");
 #else
             await Application.Current?.MainPage?.DisplayAlert("Scan issue", "NFC is not available on this device", "OK")!;
 #endif
@@ -38,6 +39,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
         nfcTagService.Closed = result =>
         {
             if (result != null) operation.Result = result;
+            if (operation.State == OperationState.InProgress) operation.State = OperationState.Idle;
             tcs.TrySetResult();
         };
         try
@@ -84,26 +86,41 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 NfcVersion = version
             };
             if(certRecord?.Payload != null) operation.Phone.Certificate = certRecord.Payload;
-            if (!operation.Onboarding.Any())
+            // Write onboarding details
+            List<NdefRecord> records = [];
+            if (operation.Callback != null)
+            {
+                try
+                { 
+                    alertMessage("Provisioning Phone");
+                    records = await operation.InvokeCallbackAsync();
+                }
+                catch (Exception e)
+                {
+                    return await SetResult(e.Message, cancellationToken: cancellationToken);
+                }
+            }
+            if (!operation.Onboarding.Any() && records.Count == 0)
             {
                 await SetResult($"{operation.Phone.Pid} details read", true, cancellationToken: cancellationToken);
                 return null;
             }
             var config = operation.Phone.CreateConfig(operation.Onboarding);
-            if (config == null) return await SetResult("No configuration found", cancellationToken: cancellationToken);
-            NdefRecord? onboardingRecord;
-            var payload = operation.Phone.Encrypt(config);
-            if (payload != null)
+            if(config != null)
             {
-                alertMessage("Writing Encrypted Onboarding Details");
-                onboardingRecord = new MimeNdefRecord("application/x-phoneos-encrypt", payload);
+                var payload = operation.Phone.Encrypt(config);
+                if (payload != null)
+                {
+                    alertMessage("Writing Encrypted Onboarding Details");
+                    records.Add(new MimeNdefRecord("application/x-phoneos-encrypt", payload));
+                }
+                else
+                {
+                    alertMessage("Writing Onboarding Details");
+                    records.Add(new TextNdefRecord(config));
+                }
             }
-            else
-            {
-                alertMessage("Writing Onboarding Details");
-                onboardingRecord = new TextNdefRecord(config);
-            }
-            messages.Add(new NdefMessage([onboardingRecord]));
+            messages.Add(new NdefMessage(records));
             messages.Add(new NdefMessage([]) {IsMessage = false});
             if (cancellationToken.IsCancellationRequested) return null;
             await stream.ResetPosition(true, cancellationToken);
@@ -132,6 +149,5 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             tcs.TrySetResult();
             return message;
         }
-        
     }
 }

@@ -68,6 +68,7 @@ public static class MauiProgram
         });
         // builder.Services.AddTransient<PhoneDetailsPopup>();
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
+        builder.Services.AddSingleton<IWebexService, WebexService>();
         builder.Services.AddSingleton<ILocationService, LocationService>();
         builder.Services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
         builder.Services.AddSingleton<IInventoryService, InventoryService>();

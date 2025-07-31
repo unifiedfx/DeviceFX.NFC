@@ -4,6 +4,8 @@
                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                         xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
                         Priority="20"
+                        Group="Inventory"
+                        x:Name="This"
                         Title="Inventory"
                         x:Class="DeviceFX.NfcApp.Views.InventoryPage">
     <ContentPage.Content>
@@ -18,10 +20,8 @@
                 <Button Grid.Column="2" Text="Clear" Command="{Binding ClearCommand}" MaximumHeightRequest="50"></Button>
             </Grid>
             <CollectionView Grid.Row="1" x:Name="SearchResults"
-                            SelectionChangedCommand="{Binding SelectionChangedCommand}"
                             ItemsSource="{Binding PhoneList}"
-                            SelectedItem="{Binding SelectedPhone}"
-                            SelectionMode="Single">
+                            SelectionMode="None">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <StackLayout>
@@ -31,6 +31,9 @@
                                 VerticalTextAlignment="Center"
                                 Text="{Binding .}"
                                 TextColor="blue">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding BindingContext.PhoneClickedCommand, Source={x:Reference This}}" CommandParameter="{Binding .}" />
+                                </Label.GestureRecognizers>
                             </Label>
                         </StackLayout>
                     </DataTemplate>

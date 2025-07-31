@@ -18,13 +18,13 @@ public abstract partial class WizardViewModelBase : ObservableObject, IQueryAttr
         CurrentStep = Steps.First();
     }
     [RelayCommand(CanExecute = nameof(CanExecuteNext))]
-    protected virtual async Task NextAsync(string? page)
+    protected virtual async Task NextAsync(string? page = null)
     {
         CurrentStep = Shell.Current.CurrentPage as StepContentPage ?? CurrentStep;
         if (page == null)
         {
             var next = Steps.OrderBy(s => s.Priority)
-                .FirstOrDefault(s => s.Priority > CurrentStep.Priority) ?? Steps.Last();
+                .FirstOrDefault(s => s.Priority > CurrentStep.Priority && s.Group == CurrentStep.Group) ?? Steps.First();
             page = next.Name;
         }
         await Shell.Current.GoToAsync($@"//{page.ToLowerInvariant()}", false);
@@ -32,13 +32,13 @@ public abstract partial class WizardViewModelBase : ObservableObject, IQueryAttr
     protected virtual bool CanExecuteNext() => true;
 
     [RelayCommand(CanExecute = nameof(CanExecuteBack))]
-    protected virtual async Task BackAsync(string? page)
+    protected virtual async Task BackAsync(string? page = null)
     {
         CurrentStep = Shell.Current.CurrentPage as StepContentPage ?? CurrentStep;
         if (page == null)
         {
             var previous = Steps.OrderByDescending(s => s.Priority)
-                .FirstOrDefault(s => s.Priority < CurrentStep.Priority) ?? Steps.First();
+                .FirstOrDefault(s => s.Priority < CurrentStep.Priority && s.Group == CurrentStep.Group) ?? Steps.First();
             page = previous.Name;
         }
         await Shell.Current.GoToAsync($@"//{page.ToLowerInvariant()}");

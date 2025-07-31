@@ -20,6 +20,7 @@
             HorizontalOptions="End">
         </ImageButton>
         <Label Grid.Column="1"
+               TextColor="White"
                FontSize="Large"
                FontAttributes="Bold"
                HorizontalTextAlignment="Center"
