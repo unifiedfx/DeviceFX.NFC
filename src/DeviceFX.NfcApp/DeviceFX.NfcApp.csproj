@@ -59,6 +59,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <TrimmerRootAssembly Include="Plugin.Maui.BottomSheet" />
+        <TrimmerRootAssembly Include="Plugin.Maui.BottomSheet" RootMode="library"/>
     </ItemGroup>
 </Project>
