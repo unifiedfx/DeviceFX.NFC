@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+               x:Class="DeviceFX.NfcApp.Views.PhoneDetailsPopup">
+    <VerticalStackLayout Spacing="10" Padding="20">
+        <CarouselView ItemsSource="{Binding PhoneList}"
+                      CurrentItem="{Binding SelectedPhone}"
+                      IndicatorView="indicatorView"
+                      Loop="False" 
+                      HeightRequest="300">
+            <CarouselView.ItemTemplate>
+                <DataTemplate>
+                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 10">
+                        <StackLayout Spacing="5" HorizontalOptions="Center">
+                            <Image Source="{Binding Image}" HeightRequest="200" Aspect="AspectFit" />
+                            <!-- <Label Text="Phone Details" FontSize="Header" HorizontalTextAlignment="Center" /> -->
+                            <Label Text="{Binding Pid}" FontSize="Header" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="{Binding Mac}" FontSize="Header" HorizontalTextAlignment="Center"/>
+                            <Label Text="{Binding Serial}" FontSize="Header" HorizontalTextAlignment="Center"/>
+                        </StackLayout>
+                    </Border>
+                </DataTemplate>
+            </CarouselView.ItemTemplate>
+        </CarouselView>
+        <IndicatorView x:Name="indicatorView"
+                       IndicatorColor="DarkGray"
+                       SelectedIndicatorColor="Black"
+                       HorizontalOptions="Center" />
+        <!-- <Button Text="Close" Clicked="OnCloseClicked" /> -->
+    </VerticalStackLayout>    
+</toolkit:Popup>

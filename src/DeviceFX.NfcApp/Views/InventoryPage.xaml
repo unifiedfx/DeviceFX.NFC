@@ -18,8 +18,10 @@
                 <Button Grid.Column="2" Text="Clear" Command="{Binding ClearCommand}" MaximumHeightRequest="50"></Button>
             </Grid>
             <CollectionView Grid.Row="1" x:Name="SearchResults"
+                            SelectionChangedCommand="{Binding SelectionChangedCommand}"
                             ItemsSource="{Binding PhoneList}"
-                            SelectionMode="None">
+                            SelectedItem="{Binding SelectedPhone}"
+                            SelectionMode="Single">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <StackLayout>

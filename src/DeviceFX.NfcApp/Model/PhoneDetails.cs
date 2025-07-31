@@ -52,6 +52,17 @@ public partial class PhoneDetails : ObservableObject
     [ObservableProperty]
     private DateTime updated = DateTime.UtcNow;
 
+    // [ObservableProperty]
+    public string Image =>
+        Pid switch
+        {
+            "DP-9841" => "cisco_9841_original.png",
+            "DP-9851" => "cisco_9851_original.png",
+            "DP-9861" => "cisco_9861_original.png",
+            "DP-9871" => "cisco_9871_original.png",
+            _ => "cisco_9841_original.png"
+        };
+
     public PhoneDetails() { }
 
     public PhoneDetails(string label)

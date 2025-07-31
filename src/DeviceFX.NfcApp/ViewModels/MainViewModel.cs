@@ -1,14 +1,16 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
+using DeviceFX.NfcApp.Views;
 using DeviceFX.NfcApp.Views.Shared;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService) : WizardViewModelBase(steps)
+public partial class MainViewModel(Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
 {
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
@@ -113,7 +115,10 @@ public partial class MainViewModel(Operation operation, IEnumerable<StepContentP
     [NotifyCanExecuteChangedFor(nameof(ShareCommand))]
     [NotifyCanExecuteChangedFor(nameof(ClearCommand))]
     private ObservableCollection<PhoneDetails> phoneList = [];
-    
+
+    [ObservableProperty]
+    private PhoneDetails? selectedPhone;
+
     public async Task LoadPhonesAsync()
     {
         PhoneList = new ObservableCollection<PhoneDetails>(await inventoryService.GetPhonesAsync());
@@ -159,5 +164,10 @@ public partial class MainViewModel(Operation operation, IEnumerable<StepContentP
     }
     public bool CanShare() => PhoneList.Count > 0;
 
+    [RelayCommand]
+    public async Task SelectionChangedAsync()
+    {
+        if(SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>();
+    }
     #endregion
 }
