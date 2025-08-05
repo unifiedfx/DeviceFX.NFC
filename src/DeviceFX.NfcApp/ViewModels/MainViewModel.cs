@@ -40,7 +40,7 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     [RelayCommand(CanExecute = nameof(CanExecuteOnboarding))]
     public async Task OnboardingAsync()
     {
-        operation.Onboarding.Clear();
+        Operation.Reset();
         switch (OnboardingMode)
         {
             case OnboardingCucm:
@@ -95,7 +95,11 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
-    public async Task SelectedAsync() => await NextAsync("provision");
+    public async Task SelectedAsync()
+    {
+        Operation.Reset();
+        await NextAsync();
+    }
 
     public bool CanExecuteSelected() => SearchSelection != null;
     #endregion
@@ -113,10 +117,9 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
             await NextAsync();
             return;
         }
-        operation.Result = null;
+        Operation.Reset();
         appViewModel.Title = "Provisioning";
         operation.State = OperationState.InProgress;
-        operation.Onboarding.Clear();
         operation.Callback = AsyncCallback;
         await deviceService.ScanPhoneAsync(operation);
         if (operation.State == OperationState.Success)
@@ -138,7 +141,7 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     [RelayCommand]
     public async Task ProvisionBackAsync()
     {
-        Operation.State = OperationState.Idle;
+        Operation.Reset();
         SearchSelection = null;
         await BackAsync();
     }
@@ -164,7 +167,7 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     {
         try
         {
-            operation.Onboarding.Clear();
+            Operation.Reset();
             await deviceService.ScanPhoneAsync(operation);
             await LoadPhonesAsync();
         }

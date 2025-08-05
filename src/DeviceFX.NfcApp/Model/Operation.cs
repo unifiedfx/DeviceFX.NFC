@@ -8,7 +8,7 @@ public partial class Operation : OperationBase
     [ObservableProperty] 
     private string? result;
     [ObservableProperty] 
-    private PhoneDetails phone;
+    private PhoneDetails? phone;
 
     public IDictionary<string,string> Onboarding { get; } = new Dictionary<string, string>();
     public Func<Operation, ValueTask<List<NdefRecord>>>? Callback { get; set; }
@@ -16,5 +16,14 @@ public partial class Operation : OperationBase
     {
         if (Callback == null) return new ();
         return Callback(this);
+    }
+
+    public void Reset()
+    {
+        Result = null;
+        Onboarding.Clear();
+        Phone = null;
+        Callback = null;
+        State = OperationState.Idle;
     }
 }
