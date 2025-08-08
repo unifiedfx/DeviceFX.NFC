@@ -6,16 +6,28 @@ namespace DeviceFX.NfcApp.Helpers;
 
 public static class NotifyPropertyChangedExtensions
 {
-    public static async Task LoadAsync(this INotifyPropertyChanged self)
-    {
-        foreach (var property in GetProperties(self)) 
-            await property.attribute.LoadAsync(self, property.info);
-    }
-    
-    public static async Task SaveAsync(this INotifyPropertyChanged self)
+    public static async Task LoadAsync(this INotifyPropertyChanged self, string? propertyName = null)
     {
         foreach (var property in GetProperties(self))
+        {
+            if(propertyName != null && property.info.Name != propertyName) continue; 
+            await property.attribute.LoadAsync(self, property.info);
+        }
+    }
+    
+    public static async Task SaveAsync(this INotifyPropertyChanged self, string? propertyName = null)
+    {
+        foreach (var property in GetProperties(self))
+        {
+            if(propertyName != null && property.info.Name != propertyName) continue; 
             await property.attribute.SaveAsync(self, property.info);
+        }
+    }
+    public static async Task ClearAsync(this INotifyPropertyChanged self, string propertyName)
+    {
+        var property = GetProperties(self).FirstOrDefault(p => p.info.Name == propertyName);
+        if(property.attribute == null) return;
+        await property.attribute.ClearAsync(self, property.info);
     }
     
     public static void ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)

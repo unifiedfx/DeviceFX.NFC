@@ -10,7 +10,7 @@ using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(AppViewModel appViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
+public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
 {
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
@@ -19,9 +19,20 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     public const string SelectedOnboarding = "Onboarding";
     public const string SelectedInventory = "Inventory";
 
-    [ObservableProperty]
     [Preference<string>("selected-mode", SelectedProvision)]
     private string selectedMode = SelectedProvision;
+    
+    public string SelectedMode
+    {
+        get => selectedMode;
+        set
+        {
+            if (selectedMode == value) return;
+            SetProperty(ref selectedMode, value);
+            OnPropertyChanged(nameof(StartText));
+            // settingsViewModel.Settings.User.OnPropertyChanged(nameof(settingsViewModel.Settings.User.IsLoggedIn));
+        }
+    }
 
     public Operation Operation => operation;
 
@@ -209,4 +220,16 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
         if(SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>();
     }
     #endregion
+
+    #region Start
+
+    public string StartText => !settingsViewModel.Settings.User.IsLoggedIn && SelectedMode =="Search" ? "Login" : "Start";
+
+    [RelayCommand]
+    public async Task StartAsync()
+    {
+        await NextAsync(SelectedMode);
+    }
+    #endregion
+
 }
