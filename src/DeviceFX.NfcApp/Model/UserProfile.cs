@@ -12,4 +12,7 @@ public partial class UserProfile : ObservableObject
 
     [ObservableProperty]
     private bool isLoggedIn;
+
+    [ObservableProperty]
+    private bool mustLogin;
 }

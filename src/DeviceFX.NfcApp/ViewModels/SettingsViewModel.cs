@@ -49,6 +49,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         ImageSource = user?.Picture ?? "grey_settings_gear.png";
         Settings.User.Picture = user?.Picture;
         Settings.User.IsLoggedIn = user != null;
+        Settings.User.MustLogin = !Settings.User.IsLoggedIn;
     }
 
     [RelayCommand]

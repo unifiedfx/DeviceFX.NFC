@@ -2,12 +2,16 @@
 
 <shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                 xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                  xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
                  Priority="10"
                  Title="DeviceFX NFC"
                  x:Class="DeviceFX.NfcApp.Views.StartPage">
     <ContentPage.Resources>
         <ResourceDictionary Source="../Resources/Styles/CustomStyles.xaml" />
+        <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        </ResourceDictionary>
         <Style TargetType="RadioButton">
             <Setter Property="ControlTemplate"
                     Value="{StaticResource ToggleRadioButtonTemplate}" />
@@ -59,7 +63,8 @@
                 <Label StyleClass="Heading">Export phone details</Label>
                 <Label StyleClass="Subheading">Manage the list of scanned phones including exporting to a CSV file that can then be used to add to any system such as CUCM via BAT Template</Label>
             </StackLayout>
-            <Button Grid.Row="3" Text="Start" FontSize="20" Command="{Binding NextCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="3" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="3" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding NextCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
         </Grid>
     </ContentPage.Content>
 </shared:StepContentPage>

@@ -15,7 +15,7 @@ public partial class StartPage : StepContentPage
 
     protected override async void OnAppearing()
     {
-        base.OnAppearing();
         await settingsViewModel.ReadAsync();
+        base.OnAppearing();
     }
 }

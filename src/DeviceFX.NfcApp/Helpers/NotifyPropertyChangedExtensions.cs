@@ -30,12 +30,14 @@ public static class NotifyPropertyChangedExtensions
         await property.attribute.ClearAsync(self, property.info);
     }
     
-    public static void ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)
+    public static async void ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)
     {
         foreach (var property in GetProperties(self))
         {
             if(!query.ContainsKey(property.attribute.Key)) continue;
-            property.info.SetValue(self,query[property.attribute.Key]);
+            var result = Convert.ChangeType(query[property.attribute.Key], property.info.PropertyType);
+            property.info.SetValue(self, result);
+            await property.attribute.SaveAsync(self, property.info);
         }
     }
     

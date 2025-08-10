@@ -27,14 +27,14 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         get => selectedMode;
         set
         {
+            Settings.User.MustLogin = value == SelectedProvision && !Settings.User.IsLoggedIn;
             if (selectedMode == value) return;
             SetProperty(ref selectedMode, value);
-            OnPropertyChanged(nameof(StartText));
-            // settingsViewModel.Settings.User.OnPropertyChanged(nameof(settingsViewModel.Settings.User.IsLoggedIn));
         }
     }
 
     public Operation Operation => operation;
+    public Settings Settings => settingsViewModel.Settings;
 
     #region Onboarding
 
@@ -223,13 +223,18 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
 
     #region Start
 
-    public string StartText => !settingsViewModel.Settings.User.IsLoggedIn && SelectedMode =="Search" ? "Login" : "Start";
-
     [RelayCommand]
-    public async Task StartAsync()
+    public async Task StartAsync(string? page = null)
     {
-        await NextAsync(SelectedMode);
+        try
+        {
+            await settingsViewModel.LoginCommand.ExecuteAsync(null);
+        }
+        catch (OperationCanceledException e)
+        {
+            return;
+        }
+        if(Settings.User.IsLoggedIn) await NextAsync(page);
     }
     #endregion
-
 }
