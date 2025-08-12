@@ -12,7 +12,7 @@ public partial class Settings : ObservableValidator
     [ObservableProperty]
     [Preference<bool>("include-location", false)]
     private bool includeLocation;
-    
+
     public WebexSettings Webex { get; } = new();
     public UserProfile User { get; } = new();
 }

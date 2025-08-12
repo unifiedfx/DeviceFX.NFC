@@ -66,14 +66,14 @@ public static class MauiProgram
             });
 #endif
         });
-        // builder.Services.AddTransient<PhoneDetailsPopup>();
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
-        builder.Services.AddSingleton<IWebexService, WebexService>();
+        builder.Services.AddSingleton<WebexService>();
+        builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
+        builder.Services.AddSingleton<IWebexService>(provider => provider.GetRequiredService<WebexService>());
         builder.Services.AddSingleton<ILocationService, LocationService>();
         builder.Services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
         builder.Services.AddSingleton<IInventoryService, InventoryService>();
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
-        builder.Services.AddSingleton<ISearchService, SearchService>();
         builder.Services.AddTransientAssembly<StepContentPage>(typeof(App).GetTypeInfo().Assembly);
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddSingleton<SettingsPage>();

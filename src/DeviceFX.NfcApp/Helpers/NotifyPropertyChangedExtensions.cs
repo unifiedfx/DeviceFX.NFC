@@ -23,11 +23,11 @@ public static class NotifyPropertyChangedExtensions
             await property.attribute.SaveAsync(self, property.info);
         }
     }
-    public static async Task ClearAsync(this INotifyPropertyChanged self, string propertyName)
+    public static async Task RemoveAsync(this INotifyPropertyChanged self, string propertyName)
     {
         var property = GetProperties(self).FirstOrDefault(p => p.info.Name == propertyName);
         if(property.attribute == null) return;
-        await property.attribute.ClearAsync(self, property.info);
+        await property.attribute.RemoveAsync(self, property.info);
     }
     
     public static async void ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)

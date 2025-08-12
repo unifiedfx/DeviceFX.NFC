@@ -27,4 +27,8 @@ public partial class WebexSettings : ObservableObject
     [ObservableProperty]
     [SecurePreference<string>("access-token")]
     private string? accessToken;
+
+    [ObservableProperty]
+    [Preference<string>("email")]
+    private string? email;
 }

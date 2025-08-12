@@ -14,7 +14,6 @@
             <Label Text="User/Workspace to assign" FontSize="20" VerticalOptions="Center"/>
             <StackLayout Grid.Row="1">
                 <SearchBar x:Name="searchBar"
-                           Unfocused="SearchBar_OnUnfocused"
                            Text="{Binding SearchInput}"
                            BackgroundColor="White"
                            Placeholder="Search user/workspace..." 
@@ -30,8 +29,6 @@
                 </SearchBar>
             </StackLayout>
             <CollectionView Grid.Row="2" x:Name="SearchResults"
-                            SelectionChanged="SearchResults_OnSelectionChanged"
-                            Scrolled="SearchResults_OnScrolled"
                             SelectedItem="{Binding SearchSelection}"
                             ItemsSource="{Binding SearchResults}"
                             SelectionMode="Single">

@@ -44,26 +44,44 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     {
         await Settings.Webex.LoadAsync();
         var user = await webexService.GetUser();
-        if(user == null && login) user = await webexService.LoginAsync();
-        Settings.User.DisplayName = user?.displayName;
-        ImageSource = user?.Picture ?? "grey_settings_gear.png";
-        Settings.User.Picture = user?.Picture;
-        Settings.User.IsLoggedIn = user != null;
-        Settings.User.MustLogin = !Settings.User.IsLoggedIn;
+        if (user == null && login)
+        {
+            user = await webexService.LoginAsync(Settings.Webex.Email);
+            Settings.Webex.Email = user?.emails.OrderByDescending(e => e.primary).Select(e => e.value).FirstOrDefault();
+            if(Settings.Webex.Email != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.Email));
+        }
+        Settings.User.Set(user);
+        ImageSource = Settings.User.Picture ?? "grey_settings_gear.png";
     }
 
     [RelayCommand]
     private async Task LogoutAsync()
     {
         await webexService.LogoutAsync();
-        Settings.User.IsLoggedIn = false;
+        Settings.User.Reset();
+        Settings.Webex.Email = null;
+        await Settings.Webex.RemoveAsync(nameof(Settings.Webex.Email));
         ImageSource = "grey_settings_gear.png";
     }
     public void ApplyQueryAttributes(IDictionary<string, object> query) => Settings.ApplyQuery(query);
     
     public async Task ReadAsync()
     {
+        webexService.RetryLogin = RetryLogin;
         await Settings.LoadAsync();
         await GetUserAsync();
+    }
+
+    private async Task<bool> RetryLogin()
+    {
+        var retryLogin = await Shell.Current.DisplayAlert("Login", "Session timeout, login again?", "Login", "Cancel");
+        if (!retryLogin)
+        {
+            Settings.User.Reset();
+            ImageSource = "grey_settings_gear.png";
+            return false;
+        }
+        await LoginAsync();
+        return Settings.User.IsLoggedIn;
     }
 }

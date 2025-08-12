@@ -24,6 +24,7 @@
             <converters:StringMapperConverter x:Key="NextStringConverter" DefaultValue="Scan"/>
             <converters:StringMapperConverter x:Key="NextImageConverter" DefaultValue="nfc_icon.png"/>
             <converters:StringMapperConverter x:Key="BackStringConverter" DefaultValue="Back"/>
+            <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
             <toolkit:EnumToBoolConverter x:Key="OperationSuccessConverter">
                 <toolkit:EnumToBoolConverter.TrueValues>
                     <model:OperationState>Success</model:OperationState>
@@ -50,12 +51,12 @@
         <Grid Padding="15" RowDefinitions="Auto, Auto, Auto, *, 50" RowSpacing="10">
             <Border BackgroundColor="LightGray" StrokeShape="RoundRectangle 10">
                 <VerticalStackLayout Spacing="20" Padding="10">
-                    <Label Text="Webex User/Workspace" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <Label Text="{Binding SearchSelection.Type, StringFormat='Webex {0}'}" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
                     <HorizontalStackLayout>
                         <Label Text="Name: "></Label>
                         <Label Text="{Binding SearchSelection.Name}"></Label>
                     </HorizontalStackLayout>
-                    <HorizontalStackLayout>
+                    <HorizontalStackLayout IsVisible="{Binding SearchSelection.Number, Converter={StaticResource IsNotNullConverter}}">
                         <Label Text="Number: "></Label>
                         <Label Text="{Binding SearchSelection.Number}"></Label>
                     </HorizontalStackLayout>

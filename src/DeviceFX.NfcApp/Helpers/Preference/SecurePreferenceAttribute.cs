@@ -61,7 +61,7 @@ public class SecurePreferenceAttribute<T>(string key, T? defaultValue = default)
         }
     }
     
-    public override ValueTask ClearAsync(INotifyPropertyChanged instance, PropertyInfo property)
+    public override ValueTask RemoveAsync(INotifyPropertyChanged instance, PropertyInfo property)
     {
         SecureStorage.Default.Remove(Key);
         property.SetValue(instance, null);

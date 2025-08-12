@@ -81,7 +81,6 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
     
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SelectedCommand))]
-    [Preference<string>("search-selected")]
     private SearchResult? searchSelection;
     
     [ObservableProperty]
@@ -96,7 +95,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         _ = Search();
         async Task Search()
         {
-            var results = await searchService.SearchAsync(query, searchCts.Token);
+            var results = await searchService.SearchAsync(query, Settings.User.OrgId, searchCts.Token);
             if (string.IsNullOrEmpty(query) || !results.Any()) 
                 SearchResults.Clear();
             else

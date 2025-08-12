@@ -5,7 +5,7 @@ namespace DeviceFX.NfcApp.Services;
 
 public class SearchService : ISearchService
 {
-    public async Task<List<SearchResult>> SearchAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<SearchResult>> SearchAsync(string query, string orgId, CancellationToken cancellationToken = default)
     {
         List<SearchResult> results = new()
         {
