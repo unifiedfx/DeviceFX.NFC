@@ -1,10 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DeviceFX.NfcApp.Model.Dto;
 
 namespace DeviceFX.NfcApp.Model;
 
 public partial class UserProfile : ObservableObject
 {
+    public WebexAccount? Account { get; private set; }
     [ObservableProperty]
     private string? displayName;
 
@@ -20,18 +20,20 @@ public partial class UserProfile : ObservableObject
     [ObservableProperty]
     private bool mustLogin;
     
-    public void Set(WebexIdentityUserDto? user)
+    public void Set(WebexAccount? account)
     {
-        if(user == null) return;
-        DisplayName = user.displayName;
-        Picture = user.Picture;
-        OrgId = user.webex.organization.organizationId;
+        if(account == null) return;
+        Account = account;
+        DisplayName = account.DisplayName;
+        Picture = account.Picture;
+        OrgId = account.CurrentOrgId;
         IsLoggedIn = true;
         MustLogin = false;
     }
     
     public void Reset()
     {
+        Account = null;
         DisplayName = null;
         Picture = null;
         OrgId = null;

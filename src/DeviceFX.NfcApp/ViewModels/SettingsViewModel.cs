@@ -43,14 +43,14 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     private async Task GetUserAsync(bool login = false)
     {
         await Settings.Webex.LoadAsync();
-        var user = await webexService.GetUser();
-        if (user == null && login)
+        var account = await webexService.GetAccount();
+        if (account == null && login)
         {
-            user = await webexService.LoginAsync(Settings.Webex.Email);
-            Settings.Webex.Email = user?.emails.OrderByDescending(e => e.primary).Select(e => e.value).FirstOrDefault();
+            account = await webexService.LoginAsync(email: Settings.Webex.Email);
+            Settings.Webex.Email = account?.Email;
             if(Settings.Webex.Email != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.Email));
         }
-        Settings.User.Set(user);
+        Settings.User.Set(account);
         ImageSource = Settings.User.Picture ?? "grey_settings_gear.png";
     }
 
@@ -74,7 +74,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
 
     private async Task<bool> RetryLogin()
     {
-        var retryLogin = await Shell.Current.DisplayAlert("Login", "Session timeout, login again?", "Login", "Cancel");
+        var retryLogin = await Shell.Current.DisplayAlert("Login", "Session timeout, login again?", "Login", "Ok");
         if (!retryLogin)
         {
             Settings.User.Reset();

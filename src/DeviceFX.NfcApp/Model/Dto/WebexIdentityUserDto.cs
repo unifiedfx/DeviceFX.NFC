@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace DeviceFX.NfcApp.Model.Dto;
@@ -58,7 +57,6 @@ public class WebexIdentityUserDto
     {
         public string organizationId { get; set; }
         public string name { get; set; }
-        public string OrgId => Convert.ToBase64String(Encoding.UTF8.GetBytes($"ciscospark://us/ORGANIZATION/{organizationId}")).TrimEnd('=');
 
     }
 

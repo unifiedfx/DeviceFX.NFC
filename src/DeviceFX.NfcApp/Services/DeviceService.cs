@@ -21,7 +21,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 operation.Phone =  new(
                     $"""
                     PID: DP-9841
-                    LAN MAC: 12345678{rand}
+                    LAN MAC: 0CD5D39E{rand}
                     SN: WZP281{rand}N
                     VID: V01
                     """);
@@ -38,7 +38,6 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
         nfcTagService.TagCallback = HandleTagCallback;
         nfcTagService.Closed = result =>
         {
-            if (result != null) operation.Result = result;
             if (operation.State == OperationState.InProgress) operation.State = OperationState.Idle;
             tcs.TrySetResult();
         };

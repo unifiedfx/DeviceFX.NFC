@@ -9,13 +9,14 @@ using DeviceFX.NfcApp.Views.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using DeviceFX.NfcApp.Helpers;
+using Microsoft.Extensions.Configuration;
 using UFX.DeviceFX.NFC;
 
 namespace DeviceFX.NfcApp;
 
 public static class MauiProgram
 {
-    public static MauiApp CreateMauiApp()
+    public static async Task<MauiApp> CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
         builder
@@ -66,6 +67,14 @@ public static class MauiProgram
             });
 #endif
         });
+        await using var stream = await FileSystem.OpenAppPackageFileAsync("appsettings.json");
+        if (stream != null)
+        {
+            var config = new ConfigurationBuilder()
+                .AddJsonStream(stream)
+                .Build();
+            builder.Configuration.AddConfiguration(config);
+        }
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
         builder.Services.AddSingleton<WebexService>();
         builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());

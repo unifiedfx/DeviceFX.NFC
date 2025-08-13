@@ -29,6 +29,7 @@
                 </SearchBar>
             </StackLayout>
             <CollectionView Grid.Row="2" x:Name="SearchResults"
+                            SelectionChangedCommand="{Binding SelectionChangedCommand}"
                             SelectedItem="{Binding SearchSelection}"
                             ItemsSource="{Binding SearchResults}"
                             SelectionMode="Single">

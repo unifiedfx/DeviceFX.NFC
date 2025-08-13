@@ -16,6 +16,14 @@ public partial class SearchResult : ObservableObject, IComparable<SearchResult>
     [ObservableProperty]
     private string? id;
 
+    [ObservableProperty]
+    private string? issue;
+
+    [ObservableProperty]
+    private string? picture;
+    
+    public bool Checked { get; set; }
+
     public int CompareTo(SearchResult? other)
     {
         if (other == null) return 1;

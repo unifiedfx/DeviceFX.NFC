@@ -36,4 +36,10 @@ public class SearchService : ISearchService
         await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
         return results.Where(r => r.Find(query)).ToList();
     }
+
+    public async Task CheckResult(SearchResult result, WebexAccount account)
+    {
+        result.Checked = true;
+        return;
+    }
 }

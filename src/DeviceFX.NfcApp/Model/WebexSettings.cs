@@ -6,18 +6,15 @@ namespace DeviceFX.NfcApp.Model;
 public partial class WebexSettings : ObservableObject
 {
     [ObservableProperty]
-    [Preference<string>("client-id","CLIENT_ID")]
     private string clientId;
 
     [ObservableProperty]
-    private string redirectUrl ="devicefxnfc://auth/callback";
+    private string redirectUrl;
 
     [ObservableProperty]
-    [Preference<string>("auth-url", "https://webexapis.com/v1/authorize")]
     private string authUrl;
 
     [ObservableProperty]
-    [Preference<string>("scopes", "identity:people_read spark:organizations_read identity:organizations_read")]
     private string scopes;
 
     [ObservableProperty]

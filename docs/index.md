@@ -1,5 +1,5 @@
 # DeviceFX NFC App
-Fully documented open source application to leverage Cisco PhoneOS NFC capabilities on Cisco 9800 series IP Phones
+Fully documented open source application to leverage PhoneOS NFC capabilities on Cisco Desk Phone 9800 Series
 * Provision to Webex
 * Save Onboarding Mode to Cisco 9800 NFC Chip
 * Inventory collection/export of phone details 
@@ -8,11 +8,11 @@ The **DeviceFX NFC** app in this repository is deployed to the [Google Play Stor
 
 # NFC Code Samples
 
-For more information on the Cisco 9800 NFC capabilities and how to read/write refer to the [NFC Code Samples](nfc.html) documentation.
+For more information on the Cisco Desk Phone 9800 Series NFC capabilities and how to read/write refer to the [NFC Code Samples](nfc.html) documentation.
 
 ## Provision to Webex
 
-This provides a simple way to provision Cisco 9800 series IP Phones to Webex Calling by searching for a user or workspace, scanning the phone NFC tag and then provisioning the phone to Webex via the Webex API.
+This provides a simple way to provision Cisco Desk Phone 9800 Series IP Phones to Webex Calling by searching for a user or workspace, scanning the phone NFC tag and then provisioning the phone to Webex via the Webex API.
 
 ## Save Onboarding Mode
 

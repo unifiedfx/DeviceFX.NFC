@@ -1,17 +1,17 @@
 # NFC Code Samples
 
-The Cisco 9800 series IP Phones run PhoneOS and support NFC (Near Field Communication) technology, which allows for quick and easy onboarding and provisioning of the devices even when in the box.
+The Cisco Desk Phone 9800 Series runs PhoneOS and supports NFC (Near Field Communication) technology, which allows for quick and easy onboarding and provisioning of the devices even when in the box.
 
 ## Overview
 
-NFC technology enables the Cisco Desk Phone 9800 to be configured and provisioned by simply tapping it against a compatible NFC-enabled device such as Android or Apple mobile phone.
-The NFC Chip on the Cisco Desk Phone 9800 can be used for the following purposes:
+NFC technology enables the Cisco Desk Phone 9800 Series to be configured and provisioned by simply tapping it against a compatible NFC-enabled device such as Android or Apple mobile phone.
+The NFC Chip on the Cisco Desk Phone 9800 Series can be used for the following purposes:
 - **Reading**: Read phone label and device certificate
 - **Onboarding**: Set the onboarding mode including writing an Activation Code or the Profile URL to register with a calling service
 - **Configuration**: Configure key settings such as Wifi SSID, Password, and Custom CA Rule
 - **NFC Version**: Read the version of Cisco NFC Chip capabilities
 
-Refer to [Cisco NFC Onboarding Data](https://help.webex.com/en-us/article/5eomso/Prepare-NFC-onboarding-data-for-Desk-Phone-9800-Series) for details on the data format supported by the Cisco Desk Phone 9800.
+Refer to [Cisco NFC Onboarding Data](https://help.webex.com/en-us/article/5eomso/Prepare-NFC-onboarding-data-for-Desk-Phone-9800-Series) for details on the data format supported by the Cisco Desk Phone 9800 Series.
 
 ## NFC Tag Memory Structure
 

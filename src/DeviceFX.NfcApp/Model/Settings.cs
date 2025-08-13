@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DeviceFX.NfcApp.Helpers.Preference;
+using Microsoft.Extensions.Configuration;
 
 namespace DeviceFX.NfcApp.Model;
 
@@ -13,6 +14,9 @@ public partial class Settings : ObservableValidator
     [Preference<bool>("include-location", false)]
     private bool includeLocation;
 
-    public WebexSettings Webex { get; } = new();
+    public Settings(IConfiguration configuration) => 
+        Webex = configuration.GetSection("AppSettings").Get<WebexSettings>() ?? new WebexSettings();
+
+    public WebexSettings Webex { get; }
     public UserProfile User { get; } = new();
 }

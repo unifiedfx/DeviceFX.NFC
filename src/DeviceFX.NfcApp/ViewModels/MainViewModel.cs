@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,7 +11,7 @@ using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
+public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IWebexService webexService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
 {
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
@@ -104,6 +105,22 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         }
     }
 
+    [RelayCommand]
+    public async Task SelectionChangedAsync()
+    {
+        if(SearchSelection == null || Settings.User.Account == null) return;
+        if (SearchSelection.Checked)
+        {
+            if (SearchSelection.Issue != null) SearchSelection = null;
+            return;
+        }
+        await searchService.CheckResult(SearchSelection, Settings.User.Account);
+        if(SearchSelection.Issue == null || !SearchSelection.Checked) return;
+        var issue = SearchSelection.Issue;
+        SearchSelection = null;
+        await Shell.Current.DisplayAlert("Unable to use", $"{issue}", "Ok");
+    }
+
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task SelectedAsync()
     {
@@ -129,22 +146,23 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         }
         Operation.Reset();
         appViewModel.Title = "Provisioning";
-        operation.State = OperationState.InProgress;
-        operation.Callback = AsyncCallback;
-        await deviceService.ScanPhoneAsync(operation);
-        if (operation.State == OperationState.Success)
+        Operation.State = OperationState.InProgress;
+        await deviceService.ScanPhoneAsync(Operation);
+        if (Operation.State == OperationState.Success)
         {
-            appViewModel.Title = "Provisioned";
+            appViewModel.Title = "Provisioning";
+            var result = await webexService.AddDeviceByMac(Settings.User.Account, Operation.Phone.Mac, Operation.Phone.Pid, SearchSelection.Id);
+            if (result != null)
+            {
+                Operation.Result = result;
+                Operation.State = OperationState.Failure;
+                appViewModel.Title = "Provision";
+            }
+            else appViewModel.Title = "Provisioned";
         }
         else
         {
             appViewModel.Title = "Provision";
-        }
-
-        async ValueTask<List<NdefRecord>> AsyncCallback(Operation op)
-        {
-            await Task.Delay(1000);
-            return [];
         }
     }
 
