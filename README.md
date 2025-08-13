@@ -3,7 +3,7 @@ Sample Application to leverage Cisco PhoneOS NFC capabilities
 
 ## Overview
 
-This project is intended to enable leveraging the [Cisco 9800 series desk phones](https://www.webex.com/us/en/devices/phone-series/cisco-phone-9800-series.html) NFC capabilities as simple as possible with a fully functional and documented open source mobile applicaiton for Android and iOS.
+This project is intended to enable leveraging the [Cisco Desk Phone 9800 Series](https://www.webex.com/us/en/devices/phone-series/cisco-phone-9800-series.html) NFC capabilities as simple as possible with a fully functional and documented open source mobile applicaiton for Android and iOS.
 
 The applicaiton covers the following scenarios:
 

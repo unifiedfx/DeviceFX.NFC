@@ -26,7 +26,7 @@
                     <RadioButton.Content>
                         <VerticalStackLayout>
                             <Label StyleClass="Centered, Heading">Provision</Label>
-                            <Label StyleClass="Centered, Subheading">Add to Webex</Label>
+                            <Label StyleClass="Centered, Subheading">Add to Webex Calling</Label>
                         </VerticalStackLayout>
                     </RadioButton.Content>
                 </RadioButton>
@@ -48,7 +48,7 @@
                 </RadioButton>
             </StackLayout>
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference ProvisionRadioButton}}">
-                <Label StyleClass="Heading" FontAttributes="Bold">Add to Webex</Label>
+                <Label StyleClass="Heading" FontAttributes="Bold">Add to Webex Calling</Label>
                 <Label StyleClass="Subheading">Login to Webex and search for a user or workplace and assign the scanned phone</Label>
             </StackLayout>
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference OnboardingRadioButton}}">
