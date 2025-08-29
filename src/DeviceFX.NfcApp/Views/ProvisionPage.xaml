@@ -24,6 +24,7 @@
             <converters:StringMapperConverter x:Key="NextStringConverter" DefaultValue="Scan"/>
             <converters:StringMapperConverter x:Key="NextImageConverter" DefaultValue="nfc_icon.png"/>
             <converters:StringMapperConverter x:Key="BackStringConverter" DefaultValue="Back"/>
+            <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
             <toolkit:EnumToBoolConverter x:Key="OperationSuccessConverter">
                 <toolkit:EnumToBoolConverter.TrueValues>
                     <model:OperationState>Success</model:OperationState>
@@ -50,12 +51,12 @@
         <Grid Padding="15" RowDefinitions="Auto, Auto, Auto, *, 50" RowSpacing="10">
             <Border BackgroundColor="LightGray" StrokeShape="RoundRectangle 10">
                 <VerticalStackLayout Spacing="20" Padding="10">
-                    <Label Text="Webex User/Workspace" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <Label Text="{Binding SearchSelection.Type, StringFormat='Webex {0}'}" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
                     <HorizontalStackLayout>
                         <Label Text="Name: "></Label>
                         <Label Text="{Binding SearchSelection.Name}"></Label>
                     </HorizontalStackLayout>
-                    <HorizontalStackLayout>
+                    <HorizontalStackLayout IsVisible="{Binding SearchSelection.Number, Converter={StaticResource IsNotNullConverter}}">
                         <Label Text="Number: "></Label>
                         <Label Text="{Binding SearchSelection.Number}"></Label>
                     </HorizontalStackLayout>
@@ -79,15 +80,31 @@
                         <Label Text="Serial: "></Label>
                         <Label Text="{Binding Operation.Phone.Serial}"></Label>
                     </HorizontalStackLayout>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Result" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                        <Label Text="Success" TextColor="Green" HorizontalTextAlignment="Center"></Label>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
             <Border Grid.Row="2" BackgroundColor="LightGray" StrokeShape="RoundRectangle 10" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
                 <VerticalStackLayout Padding="10" Spacing="20" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
-                    <Label Text="Error" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
-                    <HorizontalStackLayout>
-                        <Label Text="Result: "></Label>
-                        <Label Text="{Binding Operation.Result}" TextColor="Red"></Label>
+                    <Label Text="Phone" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <HorizontalStackLayout IsVisible="{Binding Operation.Phone.Mac, Converter= {StaticResource IsNotNullConverter}}">
+                        <Label Text="Mac: "></Label>
+                        <Label Text="{Binding Operation.Phone.Mac}"></Label>
                     </HorizontalStackLayout>
+                    <HorizontalStackLayout IsVisible="{Binding Operation.Phone.Pid, Converter= {StaticResource IsNotNullConverter}}">
+                        <Label Text="Model: "></Label>
+                        <Label Text="{Binding Operation.Phone.Pid}"></Label>
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout IsVisible="{Binding Operation.Phone.Serial, Converter= {StaticResource IsNotNullConverter}}">
+                        <Label Text="Serial: "></Label>
+                        <Label Text="{Binding Operation.Phone.Serial}"></Label>
+                    </HorizontalStackLayout>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Error" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                        <Label Text="{Binding Operation.Result}" TextColor="Red" HorizontalTextAlignment="Center"></Label>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
             <shared:NavigationButtonsView Grid.Row="4"

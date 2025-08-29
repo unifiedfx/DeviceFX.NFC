@@ -16,6 +16,10 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+    <key>CFBundleDisplayName</key>
+    <string>DeviceFX NFC App</string>
+    <key>CFBundleName</key>
+    <string>DeviceFX NFC App</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
     <key>NFCReaderUsageDescription</key>
@@ -29,7 +33,7 @@
             <string>com.devicefx.nfc</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>phoneos-nfc</string>
+                <string>devicefxnfc</string>
             </array>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>

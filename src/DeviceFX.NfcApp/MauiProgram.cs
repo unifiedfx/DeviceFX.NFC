@@ -9,13 +9,14 @@ using DeviceFX.NfcApp.Views.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using DeviceFX.NfcApp.Helpers;
+using Microsoft.Extensions.Configuration;
 using UFX.DeviceFX.NFC;
 
 namespace DeviceFX.NfcApp;
 
 public static class MauiProgram
 {
-    public static MauiApp CreateMauiApp()
+    public static async Task<MauiApp> CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
         builder
@@ -66,14 +67,22 @@ public static class MauiProgram
             });
 #endif
         });
-        // builder.Services.AddTransient<PhoneDetailsPopup>();
+        await using var stream = await FileSystem.OpenAppPackageFileAsync("appsettings.json");
+        if (stream != null)
+        {
+            var config = new ConfigurationBuilder()
+                .AddJsonStream(stream)
+                .Build();
+            builder.Configuration.AddConfiguration(config);
+        }
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
-        builder.Services.AddSingleton<IWebexService, WebexService>();
+        builder.Services.AddSingleton<WebexService>();
+        builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
+        builder.Services.AddSingleton<IWebexService>(provider => provider.GetRequiredService<WebexService>());
         builder.Services.AddSingleton<ILocationService, LocationService>();
         builder.Services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
         builder.Services.AddSingleton<IInventoryService, InventoryService>();
         builder.Services.AddSingleton<IDeviceService, DeviceService>();
-        builder.Services.AddSingleton<ISearchService, SearchService>();
         builder.Services.AddTransientAssembly<StepContentPage>(typeof(App).GetTypeInfo().Assembly);
         builder.Services.AddSingleton<AppShell>();
         builder.Services.AddSingleton<SettingsPage>();

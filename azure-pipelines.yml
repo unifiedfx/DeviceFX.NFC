@@ -113,6 +113,12 @@ jobs:
           provisioningProfileLocation: 'secureFiles'
           provProfileSecureFile: $(ProvProfileSecureFile)
 
+      - task: FileTransform@2
+        inputs:
+          folderPath: '$(System.DefaultWorkingDirectory)/src/DeviceFX.NfcApp'
+          jsonTargetFiles: '**/appsettings.json'
+        displayName: 'Transform appsettings.json'
+
       - task: Bash@3
         displayName: Build iOS App
         name: BuildIOSApp

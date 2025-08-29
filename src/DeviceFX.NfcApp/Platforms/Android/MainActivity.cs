@@ -20,7 +20,7 @@ namespace DeviceFX.NfcApp;
 [IntentFilter(
     new[] { Intent.ActionView },
     Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
-    DataScheme = "phoneos-nfc")]
+    DataScheme = "devicefxnfc")]
 public class MainActivity : MauiAppCompatActivity, NfcAdapter.IReaderCallback
 {    public void OnTagDiscovered(Tag? tag) => NfcTagService.Current?.OnTagDiscovered(tag);
     protected override void OnResume()

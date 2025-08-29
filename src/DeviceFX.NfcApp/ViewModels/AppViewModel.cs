@@ -9,7 +9,7 @@ public partial class AppViewModel(SettingsViewModel settings, Operation operatio
     private string? title;
     public string? Title
     {
-        get => title ?? Shell.Current?.CurrentItem.CurrentItem.CurrentItem.Title ?? Shell.Current?.CurrentPage.Title;
+        get => title ?? Shell.Current?.CurrentItem?.CurrentItem?.CurrentItem?.Title ?? Shell.Current?.CurrentPage?.Title;
         set
         {
             if(value == title) return;

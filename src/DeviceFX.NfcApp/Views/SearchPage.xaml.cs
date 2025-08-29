@@ -19,19 +19,4 @@ public partial class SearchPage : StepContentPage
             searchBar.Focus();
         });
     }
-
-    private async void SearchResults_OnScrolled(object? sender, ItemsViewScrolledEventArgs e)
-    {
-        // await searchBar.HideKeyboardAsync();
-    }
-
-    private async void SearchBar_OnUnfocused(object? sender, FocusEventArgs e)
-    {
-        await searchBar.HideKeyboardAsync();
-    }
-
-    private async void SearchResults_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        await searchBar.HideKeyboardAsync();
-    }
 }
