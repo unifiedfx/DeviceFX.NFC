@@ -63,8 +63,8 @@
                 <Label StyleClass="Heading">Export phone details</Label>
                 <Label StyleClass="Subheading">Manage the list of scanned phones including exporting to a CSV file that can then be used to add to any system such as CUCM via BAT Template</Label>
             </StackLayout>
-            <Button Grid.Row="3" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
-            <Button Grid.Row="3" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding NextCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="3" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding LoginCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="3" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
         </Grid>
     </ContentPage.Content>
 </shared:StepContentPage>

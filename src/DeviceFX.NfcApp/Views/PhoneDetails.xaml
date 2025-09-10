@@ -3,6 +3,10 @@
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+               WidthRequest="350"
+               BackgroundColor="LightGray"
+               Margin="5, 20"
+               Padding="0"
                x:Class="DeviceFX.NfcApp.Views.PhoneDetailsPopup">
     <toolkit:Popup.Resources>
         <Style x:Key="CenteredLabelStyle" TargetType="Label">
@@ -11,17 +15,18 @@
             <Setter Property="HorizontalTextAlignment" Value="Center" />
         </Style>
     </toolkit:Popup.Resources>
-    <VerticalStackLayout Spacing="10" Padding="20">
+    <VerticalStackLayout Spacing="10" Padding="0" BackgroundColor="LightGray">
         <CarouselView ItemsSource="{Binding PhoneList}"
                       CurrentItem="{Binding SelectedPhone}"
                       IndicatorView="indicatorView"
                       Loop="False" 
-                      HeightRequest="300">
+                      WidthRequest="350"
+                      HeightRequest="350">
             <CarouselView.ItemTemplate>
                 <DataTemplate>
-                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 10">
+                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 20" WidthRequest="300">
                         <StackLayout Spacing="5" HorizontalOptions="Center">
-                            <Image Source="{Binding Image}" HeightRequest="200" Aspect="AspectFit" />
+                            <Image Source="{Binding Image}" HeightRequest="250" Aspect="AspectFit" />
                             <Label Text="{Binding Pid}" Style="{StaticResource CenteredLabelStyle}"/>
                             <Label Text="{Binding Mac, StringFormat='MAC: {0}'}" Style="{StaticResource CenteredLabelStyle}"/>
                             <Label Text="{Binding Serial, StringFormat='Serial: {0}'}" Style="{StaticResource CenteredLabelStyle}"/>

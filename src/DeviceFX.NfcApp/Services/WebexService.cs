@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -7,10 +8,11 @@ using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Model.Dto;
+using Microsoft.ApplicationInsights;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class WebexService(Settings settings) : IWebexService, ISearchService
+public class WebexService(Settings settings, TelemetryClient telemetryClient) : IWebexService, ISearchService
 {
     public Func<Task<bool>>? RetryLogin { get; set; }
 
@@ -21,9 +23,18 @@ public class WebexService(Settings settings) : IWebexService, ISearchService
         var authRequest = $"{settings.Webex.AuthUrl}?client_id={settings.Webex.ClientId}&response_type=token&redirect_uri={Uri.EscapeDataString(settings.Webex.RedirectUrl)}" + 
                           $"&scope={Uri.EscapeDataString(settings.Webex.Scopes)}";
         if(email != null) authRequest += $"&email={Uri.EscapeDataString(email)}";
-        var authResult = await WebAuthenticator.AuthenticateAsync(
-            new Uri(authRequest),
-            new Uri(settings.Webex.RedirectUrl));
+        WebAuthenticatorResult? authResult = null;
+        try
+        {
+            authResult = await WebAuthenticator.AuthenticateAsync(
+                new Uri(authRequest),
+                new Uri(settings.Webex.RedirectUrl));
+        }
+        catch (TaskCanceledException e)
+        {
+            Debug.WriteLine(e);
+        }
+        if (authResult == null) return null;
         if(authResult.Properties.TryGetValue("error_description", out var property)) throw new HttpRequestException(property);
         if (authResult.Properties.TryGetValue("access_token", out var accessToken) &&
             !string.IsNullOrEmpty(accessToken))
@@ -79,12 +90,24 @@ public class WebexService(Settings settings) : IWebexService, ISearchService
         var httpClient = await GetHttpClient(true);
         if (httpClient == null) return null;
         var response = await httpClient.PostAsJsonAsync($"v1/devices?orgId={account.CurrentOrgId}", data);
+        string? result = null;
+        string? trackingId = null;
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-            return content.GetProperty("errors")[0].GetProperty("description").GetString();
+            trackingId = content.GetProperty("trackingId").GetString();
+            result =  content.GetProperty("errors")[0].GetProperty("description").GetString();
         }
-        return null;
+        telemetryClient.TrackEvent("AddDeviceByMac", new Dictionary<string, string?>
+        {
+            { "Result", result },
+            { "StatusCode", response.StatusCode.ToString() },
+            { "ReasonPhrase", response.ReasonPhrase },
+            { "TrackingId", trackingId },
+            { "Model", newModel }
+        });
+        await telemetryClient.FlushAsync(CancellationToken.None);
+        return result;
     }
     
     private async Task<HttpClient?> GetHttpClient(bool retryLogin = false)

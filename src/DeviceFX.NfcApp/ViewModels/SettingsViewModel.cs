@@ -8,6 +8,7 @@ namespace DeviceFX.NfcApp.ViewModels;
 
 public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService) : ObservableValidator, IQueryAttributable
 {
+    private bool firstLoad = true;
     [ObservableProperty]
     private string imageSource = "grey_settings_gear.png";
     public Settings Settings { get; } = settings;
@@ -69,7 +70,11 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     {
         webexService.RetryLogin = RetryLogin;
         await Settings.LoadAsync();
-        await GetUserAsync();
+        if (firstLoad)
+        {
+            await GetUserAsync();
+            firstLoad = false;
+        }
     }
 
     private async Task<bool> RetryLogin()

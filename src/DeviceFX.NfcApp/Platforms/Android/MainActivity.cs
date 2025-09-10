@@ -17,10 +17,6 @@ namespace DeviceFX.NfcApp;
     DataHost = "nfc.devicefx.com",
     DataPathPattern = "/.*",
     AutoVerify = true)]
-[IntentFilter(
-    new[] { Intent.ActionView },
-    Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
-    DataScheme = "devicefxnfc")]
 public class MainActivity : MauiAppCompatActivity, NfcAdapter.IReaderCallback
 {    public void OnTagDiscovered(Tag? tag) => NfcTagService.Current?.OnTagDiscovered(tag);
     protected override void OnResume()

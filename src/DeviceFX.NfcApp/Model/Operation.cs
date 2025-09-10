@@ -9,6 +9,7 @@ public partial class Operation : OperationBase
     private string? result;
     [ObservableProperty] 
     private PhoneDetails? phone;
+    public string? Mode { get; set; }
 
     public IDictionary<string,string> Onboarding { get; } = new Dictionary<string, string>();
     public Func<Operation, ValueTask<List<NdefRecord>>>? Callback { get; set; }
@@ -20,6 +21,7 @@ public partial class Operation : OperationBase
 
     public void Reset()
     {
+        Mode = null;
         Result = null;
         Onboarding.Clear();
         Phone = null;

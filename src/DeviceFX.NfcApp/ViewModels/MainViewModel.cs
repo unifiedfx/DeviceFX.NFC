@@ -1,13 +1,12 @@
 using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
-using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeviceFX.NfcApp.Abstractions;
+using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Views.Shared;
-using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
@@ -66,6 +65,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
                 operation.Onboarding.Add("onboardingDetail",ActivationCode);
                 break;
         }
+        Operation.Mode = $"Onboarding:{OnboardingMode}";
         await deviceService.ScanPhoneAsync(operation);
     }
     public bool CanExecuteOnboarding() => OnboardingMode != OnboardingActivation || !string.IsNullOrEmpty(ActivationCode);
@@ -147,6 +147,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         Operation.Reset();
         appViewModel.Title = "Provisioning";
         Operation.State = OperationState.InProgress;
+        Operation.Mode = "Provision";
         await deviceService.ScanPhoneAsync(Operation);
         if (Operation.State == OperationState.Success)
         {
@@ -196,6 +197,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         try
         {
             Operation.Reset();
+            Operation.Mode = "Inventory";
             await deviceService.ScanPhoneAsync(operation);
             await LoadPhonesAsync();
         }
@@ -234,14 +236,14 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
     public async Task PhoneClickedAsync(PhoneDetails phone)
     {
         SelectedPhone = phone;
-        if(SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>();
+        if (SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>(Shell.Current);
     }
     #endregion
 
     #region Start
 
     [RelayCommand]
-    public async Task StartAsync(string? page = null)
+    public async Task LoginAsync(string? page = null)
     {
         try
         {
@@ -252,6 +254,15 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
             return;
         }
         if(Settings.User.IsLoggedIn) await NextAsync(page);
+    }
+    [RelayCommand]
+    public async Task StartAsync(string? page = null)
+    {
+        if (!SearchResults.Any() && !string.IsNullOrEmpty(SearchInput))
+        {
+            await this.RemoveAsync("SearchInput");
+        }
+        await NextAsync(page);
     }
     #endregion
 }

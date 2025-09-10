@@ -41,7 +41,7 @@ public abstract partial class WizardViewModelBase : ObservableObject, IQueryAttr
                 .FirstOrDefault(s => s.Priority < CurrentStep.Priority && s.Group == CurrentStep.Group) ?? Steps.First();
             page = previous.Name;
         }
-        await Shell.Current.GoToAsync($@"//{page.ToLowerInvariant()}");
+        await Shell.Current.GoToAsync($@"//{page.ToLowerInvariant()}", false);
     }
     protected virtual bool CanExecuteBack() => true;
 

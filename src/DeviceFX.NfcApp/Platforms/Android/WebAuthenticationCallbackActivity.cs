@@ -9,6 +9,7 @@ namespace DeviceFX.NfcApp;
         Android.Content.Intent.CategoryDefault,
         Android.Content.Intent.CategoryBrowsable 
     },
+    DataPath="/callback",
     DataHost = "auth",
     DataScheme = "devicefxnfc")]
 

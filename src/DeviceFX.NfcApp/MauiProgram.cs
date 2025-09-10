@@ -9,6 +9,9 @@ using DeviceFX.NfcApp.Views.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
 using DeviceFX.NfcApp.Helpers;
+using FFImageLoading.Maui;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
 using UFX.DeviceFX.NFC;
 
@@ -21,12 +24,21 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseFFImageLoading()
             .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
+#if IOS
+        // https://learn.microsoft.com/en-us/dotnet/maui/whats-new/dotnet-9?view=net-maui-9.0#collectionview-and-carouselview
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+            handlers.AddHandler<Microsoft.Maui.Controls.CollectionView, Microsoft.Maui.Controls.Handlers.Items2.CollectionViewHandler2>();
+            handlers.AddHandler<Microsoft.Maui.Controls.CarouselView, Microsoft.Maui.Controls.Handlers.Items2.CarouselViewHandler2>();
+        });
+#endif
         builder.ConfigureLifecycleEvents(events =>
         {
 #if IOS
@@ -54,27 +66,24 @@ public static class MauiProgram
             {
                 android.OnCreate((activity, bundle) =>
                 {
-                    if(activity.Intent?.Data == null) return;
-                    var uri = new Uri(activity.Intent?.Data?.ToString());
+                    if(activity.Intent?.DataString == null || activity.Intent.Data?.Host == "auth") return;
+                    var uri = new Uri(activity.Intent.DataString);
                     Application.Current?.SendOnAppLinkRequestReceived(uri);
                 });
                 android.OnNewIntent((activity, intent) =>
                 {
-                    if(intent?.Data == null) return;
-                    var uri = new Uri(intent?.Data?.ToString());
+                    if(intent?.DataString == null || intent.Data?.Host == "auth") return;
+                    var uri = new Uri(intent.DataString);
                     Application.Current?.SendOnAppLinkRequestReceived(uri);
                 });
             });
 #endif
         });
         await using var stream = await FileSystem.OpenAppPackageFileAsync("appsettings.json");
-        if (stream != null)
-        {
-            var config = new ConfigurationBuilder()
-                .AddJsonStream(stream)
-                .Build();
-            builder.Configuration.AddConfiguration(config);
-        }
+        var configBuilder = new ConfigurationBuilder();
+        if (stream != null) configBuilder.AddJsonStream(stream);
+        var configuration = configBuilder.Build();
+        builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
         builder.Services.AddSingleton<WebexService>();
         builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
@@ -93,6 +102,44 @@ public static class MauiProgram
         builder.Services.AddSingleton<ShellTitleView>();
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<WizardViewModelBase>(provider => provider.GetRequiredService<MainViewModel>());
+        var applicationInsights = configuration.GetConnectionString("ApplicationInsights");
+        if (!string.IsNullOrWhiteSpace(applicationInsights) || applicationInsights.Contains("__"))
+        {
+            var installationId = Preferences.Get("installationId", String.Empty);
+            if (string.IsNullOrEmpty(installationId))
+            {
+                installationId = Guid.NewGuid().ToString();
+                Preferences.Set("installationId", installationId);
+            }
+            builder.Services.AddSingleton<TelemetryClient>(provider =>
+            {
+                var config = new TelemetryConfiguration
+                {
+                    ConnectionString = applicationInsights
+                };
+                var telemetryClient = new TelemetryClient(config);
+                telemetryClient.Context.Component.Version = AppInfo.VersionString;
+                telemetryClient.Context.Device.OperatingSystem = DeviceInfo.Platform.ToString();
+                telemetryClient.Context.Session.Id = installationId;
+                telemetryClient.Context.Device.Model = DeviceInfo.Model;
+                telemetryClient.Context.Device.OemName = DeviceInfo.Manufacturer;
+                telemetryClient.Context.Device.Type = DeviceInfo.DeviceType.ToString();
+                return telemetryClient;
+            });
+            builder.Logging.AddApplicationInsights(configureTelemetryConfiguration: (config) =>
+            {
+                config.ConnectionString = applicationInsights;
+            }, configureApplicationInsightsLoggerOptions: (options) =>
+            {
+                options.IncludeScopes = true;
+            });
+            builder.Logging.AddFilter((category, level) =>
+            {
+                if (category == null) return false;
+                if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
+                return true;
+            });
+        }
         builder.AddNfc();
 #if ANDROID
         // Custom mapping for Android to remove unnecessary space on the left side of the Shell TitleView
@@ -104,11 +151,9 @@ public static class MauiProgram
         });
 #endif
 
-
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-
         return builder.Build();
     }
 }
