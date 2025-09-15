@@ -6,6 +6,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              Title="Settings"
              HideSoftInputOnTapped="True"
+             x:Name="This"
              x:Class="DeviceFX.NfcApp.Views.SettingsPage">
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -40,6 +41,14 @@
                        HorizontalTextAlignment="Center"
                        VerticalTextAlignment="Center"
                        TextColor="{DynamicResource Primary}" />
+                <Picker Title="Select Organization" ItemsSource="{Binding Settings.User.Organizations}" SelectedItem="{Binding Settings.User.Organization, Mode=TwoWay}">
+                    <Picker.Behaviors>
+                        <toolkit:EventToCommandBehavior
+                            EventName="SelectedIndexChanged"
+                            BindingContext="{Binding Path=BindingContext, Source={x:Reference This}, x:DataType=ContentPage}"
+                            Command="{Binding OrganizationChangedCommand}" />
+                    </Picker.Behaviors>
+                </Picker>
                 <Button Text="Logout" Command="{Binding LogoutCommand}" WidthRequest="120"></Button>
             </StackLayout>
             <StackLayout Grid.Row="2" IsVisible="{Binding Settings.User.IsLoggedIn, Converter={StaticResource InvertedBoolConverter}}">

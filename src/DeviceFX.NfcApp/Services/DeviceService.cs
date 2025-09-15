@@ -171,7 +171,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             {
                 {"Result", result ? "Success" : "Failure"},
                 {"Message", message},
-                {"PID", operation.Phone?.Pid},
+                {"Model", operation.Phone?.Pid},
                 {"Version", operation.Phone?.NfcVersion}
             });
             await telemetryClient.FlushAsync(cancellationToken);

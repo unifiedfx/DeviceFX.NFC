@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Helpers.Preference;
@@ -10,14 +11,43 @@ using DeviceFX.NfcApp.Views.Shared;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IWebexService webexService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
+public partial class MainViewModel : WizardViewModelBase
 {
+    private readonly AppViewModel appViewModel;
+    private readonly SettingsViewModel settingsViewModel;
+    private readonly Operation operation;
+    private readonly ISearchService searchService;
+    private readonly IWebexService webexService;
+    private readonly IDeviceService deviceService;
+    private readonly IInventoryService inventoryService;
+    private readonly IPopupService popupService;
+
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
     public const string OnboardingActivation = "Activation";
     public const string SelectedProvision = "Search";
     public const string SelectedOnboarding = "Onboarding";
     public const string SelectedInventory = "Inventory";
+
+    /// <inheritdoc/>
+    public MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IWebexService webexService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService, IMessenger messenger) : base(steps)
+    {
+        this.appViewModel = appViewModel;
+        this.settingsViewModel = settingsViewModel;
+        this.operation = operation;
+        this.searchService = searchService;
+        this.webexService = webexService;
+        this.deviceService = deviceService;
+        this.inventoryService = inventoryService;
+        this.popupService = popupService;
+        messenger.Register<OrganizationMessage>(this, async (recipient, message) =>
+        {
+            SearchResults.Clear();
+            SearchSelection = null;
+            SearchInput = String.Empty;
+            await this.RemoveAsync(nameof(SearchInput));
+        });
+    }
 
     [Preference<string>("selected-mode", SelectedProvision)]
     private string selectedMode = SelectedProvision;
@@ -96,7 +126,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         _ = Search();
         async Task Search()
         {
-            var results = await searchService.SearchAsync(query, Settings.User.OrgId, searchCts.Token);
+            var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, searchCts.Token);
             if (string.IsNullOrEmpty(query) || !results.Any()) 
                 SearchResults.Clear();
             else
@@ -108,13 +138,14 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
     [RelayCommand]
     public async Task SelectionChangedAsync()
     {
-        if(SearchSelection == null || Settings.User.Account == null) return;
+        if(SearchSelection == null) return;
         if (SearchSelection.Checked)
         {
             if (SearchSelection.Issue != null) SearchSelection = null;
             return;
         }
-        await searchService.CheckResult(SearchSelection, Settings.User.Account);
+        await webexService.UpdateOrganization(Settings.User, Settings.User.Organization.Id);
+        await searchService.CheckResult(SearchSelection, Settings.User.Organization?.Id, Settings.User?.Organization?.LicenseIds);
         if(SearchSelection.Issue == null || !SearchSelection.Checked) return;
         var issue = SearchSelection.Issue;
         SearchSelection = null;
@@ -133,7 +164,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
 
     #region Provision
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task ProvisionAsync()
     {
         // Start NFC Read then provision to Webex
@@ -152,7 +183,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
         if (Operation.State == OperationState.Success)
         {
             appViewModel.Title = "Provisioning";
-            var result = await webexService.AddDeviceByMac(Settings.User.Account, Operation.Phone.Mac, Operation.Phone.Pid, SearchSelection.Id);
+            var result = await webexService.AddDeviceByMac(Settings.User.Organization.Id, Operation.Phone.Mac, Operation.Phone.Pid, SearchSelection.Id);
             if (result != null)
             {
                 Operation.Result = result;
@@ -185,7 +216,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
 
     [ObservableProperty]
     private PhoneDetails? selectedPhone;
-
+    
     public async Task LoadPhonesAsync()
     {
         PhoneList = new ObservableCollection<PhoneDetails>(await inventoryService.GetPhonesAsync());
@@ -260,6 +291,7 @@ public partial class MainViewModel(AppViewModel appViewModel, SettingsViewModel 
     {
         if (!SearchResults.Any() && !string.IsNullOrEmpty(SearchInput))
         {
+            SearchInput = String.Empty;
             await this.RemoveAsync("SearchInput");
         }
         await NextAsync(page);

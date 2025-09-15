@@ -28,4 +28,8 @@ public partial class WebexSettings : ObservableObject
     [ObservableProperty]
     [Preference<string>("email")]
     private string? email;
+    
+    [ObservableProperty]
+    [Preference<string>("orgId")]
+    private string? orgId;
 }

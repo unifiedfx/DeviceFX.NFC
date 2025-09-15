@@ -9,17 +9,17 @@ using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Model.Dto;
 using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class WebexService(Settings settings, TelemetryClient telemetryClient) : IWebexService, ISearchService
+public class WebexService(Settings settings, TelemetryClient telemetryClient, ILogger<WebexService> logger) : IWebexService, ISearchService
 {
     public Func<Task<bool>>? RetryLogin { get; set; }
 
-    public async Task<WebexAccount?> LoginAsync(string? orgId = null, string? email = null)
+    public async Task<bool> LoginAsync(UserProfile user, string? orgId = null, string? email = null)
     {
-        var account = await GetAccount(orgId);
-        if (account != null) return account;
+        if (await UpdateUser(user, orgId)) return true;
         var authRequest = $"{settings.Webex.AuthUrl}?client_id={settings.Webex.ClientId}&response_type=token&redirect_uri={Uri.EscapeDataString(settings.Webex.RedirectUrl)}" + 
                           $"&scope={Uri.EscapeDataString(settings.Webex.Scopes)}";
         if(email != null) authRequest += $"&email={Uri.EscapeDataString(email)}";
@@ -34,7 +34,7 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
         {
             Debug.WriteLine(e);
         }
-        if (authResult == null) return null;
+        if (authResult == null) return false;
         if(authResult.Properties.TryGetValue("error_description", out var property)) throw new HttpRequestException(property);
         if (authResult.Properties.TryGetValue("access_token", out var accessToken) &&
             !string.IsNullOrEmpty(accessToken))
@@ -48,35 +48,35 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
             settings.Webex.TokenExpires = DateTime.UtcNow.AddMilliseconds(expiresIn).Ticks;
             await settings.Webex.SaveAsync(nameof(settings.Webex.TokenExpires));
         }
-        return await GetAccount(orgId);
+        return await UpdateUser(user, orgId);
     }
 
     public async Task LogoutAsync() => await settings.Webex.RemoveAsync(nameof(settings.Webex.AccessToken));
-    
-    public async Task<WebexAccount?> GetAccount(string? orgId = null, bool retryLogin = false)
+
+    public async Task<bool> UpdateUser(UserProfile user, string? orgId = null, bool retryLogin = false)
     {
         var httpClient = await GetHttpClient(retryLogin);
-        if(httpClient == null) return null;
-        var user = await httpClient.GetFromJsonAsync<WebexIdentityUserDto>("identity/scim/v2/Users/me");
-        if(user == null) return null;
-        var organizations = await httpClient.GetFromJsonAsync<WebexOrganizationsDto>("v1/organizations");
-        if(organizations == null) return null;
-        var currentOrgId = organizations.organizations.All(o => o.id != orgId) ? orgId : WebexIDTypes.Organization.ConvertToBase64Id(user.webex.organization.organizationId);
-        var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={currentOrgId}");
-        return licenses == null ? null : new WebexAccount(user, organizations, licenses);
-    }
-    public async Task<bool> UpdateOrganization(WebexAccount account, string orgId)
-    {
-        if(account.Organizations.All(o => o.Id != orgId)) return false;
-        var httpClient = await GetHttpClient(false);
         if(httpClient == null) return false;
-        var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={orgId}");
-        if(licenses == null) return false;
-        account.Update(orgId, licenses);
+        var identity = await httpClient.GetFromJsonAsync<WebexIdentityUserDto>("identity/scim/v2/Users/me");
+        if(identity == null) return false;
+        var organizations = await httpClient.GetFromJsonAsync<WebexOrganizationsDto>("v1/organizations");
+        if(organizations == null) return false;
+        user.Set(identity, organizations, orgId);
+        await UpdateOrganization(user);
         return true;
     }
-    
-    public async Task<string?> AddDeviceByMac(WebexAccount account, string mac, string model, string? personId = null, string? workspaceId = null)
+
+    public async Task UpdateOrganization(UserProfile user, string? orgId = null)
+    {
+        user.Organization = user.Organizations.FirstOrDefault(o => o.Id == orgId) ?? user.Organization;
+        if(user.Organization is not {LicenseIds: null}) return;
+        var httpClient = await GetHttpClient();
+        if(httpClient == null) return;
+        var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={user.Organization.Id}");
+        user.Organization.LicenseIds = licenses?.items.Select(l => l.id).ToList() ?? new List<string>();
+    }
+
+    public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string? personId = null, string? workspaceId = null)
     {
         if(personId == null && workspaceId == null) throw new ArgumentNullException(nameof(personId));
         var newModel = "Cisco " + Regex.Match(model, @"\d{4}").Value;
@@ -89,23 +89,20 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
         if(workspaceId != null) data.Add("workspaceId", workspaceId);
         var httpClient = await GetHttpClient(true);
         if (httpClient == null) return null;
-        var response = await httpClient.PostAsJsonAsync($"v1/devices?orgId={account.CurrentOrgId}", data);
+        var startTime = DateTime.UtcNow;
+        var response = await httpClient.PostAsJsonAsync($"v1/devices?orgId={orgId}", data);
+        var duration = DateTime.UtcNow - startTime;
         string? result = null;
-        string? trackingId = null;
         if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-            trackingId = content.GetProperty("trackingId").GetString();
+            var trackingId = content.GetProperty("trackingId").GetString();
             result =  content.GetProperty("errors")[0].GetProperty("description").GetString();
+            logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", result, trackingId);
         }
-        telemetryClient.TrackEvent("AddDeviceByMac", new Dictionary<string, string?>
-        {
-            { "Result", result },
-            { "StatusCode", response.StatusCode.ToString() },
-            { "ReasonPhrase", response.ReasonPhrase },
-            { "TrackingId", trackingId },
-            { "Model", newModel }
-        });
+        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "WebexAddDeviceByMac",
+            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices?orgId={orgId}", success: response.IsSuccessStatusCode,
+            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
         await telemetryClient.FlushAsync(CancellationToken.None);
         return result;
     }
@@ -143,7 +140,7 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
         }).ToList() ?? new();
     }
 
-    public async Task CheckResult(SearchResult result, WebexAccount account)
+    public async Task CheckResult(SearchResult result, string orgId, List<string> LicenseIds)
     {
         if(result.Checked) return;
         var httpClient = await GetHttpClient(true);
@@ -152,7 +149,7 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
             result.Issue = "Unable to validate";
             return;
         }
-        var person =  await httpClient.GetFromJsonAsync<WebexPersonDto>($"v1/people/{result.Id}?orgId={account.CurrentOrgId}&callingData=true");
+        var person =  await httpClient.GetFromJsonAsync<WebexPersonDto>($"v1/people/{result.Id}?orgId={orgId}&callingData=true");
         if (person == null)
         {
             result.Issue = "Unable to validate";
@@ -165,7 +162,7 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient) : 
             result.Issue = "No license";
             return;
         }
-        var license = account.CallingLicenses.FirstOrDefault(l => person.licenses.Contains(l.Id));
+        var license = LicenseIds.FirstOrDefault(l => person.licenses.Contains(l));
         if(license == null)
         {
             result.Checked = true;

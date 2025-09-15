@@ -1,12 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Helpers;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService) : ObservableValidator, IQueryAttributable
+public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger) : ObservableValidator, IQueryAttributable
 {
     private bool firstLoad = true;
     [ObservableProperty]
@@ -36,6 +37,15 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     }
 
     [RelayCommand]
+    private async Task OrganizationChangedAsync()
+    {
+        if(Settings.Webex.OrgId == Settings.User.Organization?.Id) return;
+        Settings.Webex.OrgId = Settings.User.Organization?.Id;
+        Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
+        messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
+    }
+
+    [RelayCommand]
     private async Task LoginAsync()
     {
         await GetUserAsync(true);
@@ -44,14 +54,14 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     private async Task GetUserAsync(bool login = false)
     {
         await Settings.Webex.LoadAsync();
-        var account = await webexService.GetAccount();
-        if (account == null && login)
+        if (!await webexService.UpdateUser(Settings.User, Settings.Webex.OrgId) && login)
         {
-            account = await webexService.LoginAsync(email: Settings.Webex.Email);
-            Settings.Webex.Email = account?.Email;
+            if (!await webexService.LoginAsync(Settings.User, Settings.Webex.OrgId, Settings.Webex.Email)) return;
+            Settings.Webex.Email = Settings.User.Email;
+            Settings.Webex.OrgId = Settings.User.Organization?.Id; 
             if(Settings.Webex.Email != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.Email));
+            if(Settings.Webex.OrgId != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
         }
-        Settings.User.Set(account);
         ImageSource = Settings.User.Picture ?? "grey_settings_gear.png";
     }
 
@@ -61,8 +71,11 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         await webexService.LogoutAsync();
         Settings.User.Reset();
         Settings.Webex.Email = null;
+        Settings.Webex.OrgId = null;
         await Settings.Webex.RemoveAsync(nameof(Settings.Webex.Email));
+        await Settings.Webex.RemoveAsync(nameof(Settings.Webex.OrgId));
         ImageSource = "grey_settings_gear.png";
+        messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
     }
     public void ApplyQueryAttributes(IDictionary<string, object> query) => Settings.ApplyQuery(query);
     

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using CommunityToolkit.Maui;
+using CommunityToolkit.Mvvm.Messaging;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Services;
@@ -101,6 +102,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SettingsViewModel>();
         builder.Services.AddSingleton<ShellTitleView>();
         builder.Services.AddSingleton<MainViewModel>();
+        builder.Services.AddSingleton<IMessenger, WeakReferenceMessenger>();
         builder.Services.AddSingleton<WizardViewModelBase>(provider => provider.GetRequiredService<MainViewModel>());
         var applicationInsights = configuration.GetConnectionString("ApplicationInsights");
         if (!string.IsNullOrWhiteSpace(applicationInsights) || applicationInsights.Contains("__"))
@@ -119,8 +121,8 @@ public static class MauiProgram
                 };
                 var telemetryClient = new TelemetryClient(config);
                 telemetryClient.Context.Component.Version = AppInfo.VersionString;
-                telemetryClient.Context.Device.OperatingSystem = DeviceInfo.Platform.ToString();
                 telemetryClient.Context.Session.Id = installationId;
+                telemetryClient.Context.Device.OperatingSystem = $"{DeviceInfo.Platform} {DeviceInfo.Current.VersionString}";
                 telemetryClient.Context.Device.Model = DeviceInfo.Model;
                 telemetryClient.Context.Device.OemName = DeviceInfo.Manufacturer;
                 telemetryClient.Context.Device.Type = DeviceInfo.DeviceType.ToString();
