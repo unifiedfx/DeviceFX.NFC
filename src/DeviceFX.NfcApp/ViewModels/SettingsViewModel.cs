@@ -48,7 +48,14 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     [RelayCommand]
     private async Task LoginAsync()
     {
-        await GetUserAsync(true);
+        try
+        {
+            await GetUserAsync(true);
+        }
+        catch (Exception e)
+        {
+            await Shell.Current.DisplayAlert("Login error", $"{e.Message}", "Ok");
+        }
     }
 
     private async Task GetUserAsync(bool login = false)

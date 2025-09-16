@@ -73,7 +73,7 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
         var httpClient = await GetHttpClient();
         if(httpClient == null) return;
         var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={user.Organization.Id}");
-        user.Organization.LicenseIds = licenses?.items.Select(l => l.id).ToList() ?? new List<string>();
+        user.Organization.LicenseIds = licenses?.items.Where(i => i.name.Contains("Webex Calling", StringComparison.InvariantCultureIgnoreCase)).Select(l => l.id).ToList() ?? new List<string>();
     }
 
     public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string? personId = null, string? workspaceId = null)
@@ -106,6 +106,45 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
         await telemetryClient.FlushAsync(CancellationToken.None);
         return result;
     }
+
+    public async Task<ActivationResult> AddDeviceByActivationCode(string orgId, string model, string? personId = null,
+        string? workspaceId = null)
+    {
+        if(personId == null && workspaceId == null) throw new ArgumentNullException(nameof(personId));
+        var newModel = "Cisco " + Regex.Match(model, @"\d{4}").Value;
+        var data = new Dictionary<string, object>
+        {
+            { "model", newModel }
+        };
+        if(personId != null) data.Add("personId", personId);
+        if(workspaceId != null) data.Add("workspaceId", workspaceId);
+        var httpClient = await GetHttpClient(true);
+        if (httpClient == null) return null;
+        var startTime = DateTime.UtcNow;
+        var response = await httpClient.PostAsJsonAsync($"v1/devices/activationCode?orgId={orgId}", data);
+        var duration = DateTime.UtcNow - startTime;
+        string? result = null;
+        if (!response.IsSuccessStatusCode)
+        {
+            string? trackingId = null;
+            if (response.Headers.TryGetValues("trackingId", out var values))
+            {
+                trackingId = values.FirstOrDefault();
+            }
+            logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", response.ReasonPhrase, trackingId);
+            return new ActivationResult(Error: response.ReasonPhrase);
+        }
+        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "AddDeviceByActivationCode",
+            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices/activationCode?orgId={orgId}", success: response.IsSuccessStatusCode,
+            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
+        await telemetryClient.FlushAsync(CancellationToken.None);
+        var code = content.GetProperty("code").GetString();
+        var expiry = content.GetProperty("expiryTime").GetDateTime();
+        return new ActivationResult(code, expiry);
+    }
+
+    public record ActivationResult(string? Code = null, DateTime? Expiry = null, string? Error = null);
     
     private async Task<HttpClient?> GetHttpClient(bool retryLogin = false)
     {

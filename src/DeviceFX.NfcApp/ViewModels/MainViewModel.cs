@@ -7,7 +7,9 @@ using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
+using DeviceFX.NfcApp.Services;
 using DeviceFX.NfcApp.Views.Shared;
+using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
@@ -85,18 +87,18 @@ public partial class MainViewModel : WizardViewModelBase
         switch (OnboardingMode)
         {
             case OnboardingCucm:
-                operation.Onboarding.Add("onboardingMethod","4");
+                Operation.Onboarding.Add("onboardingMethod","4");
                 break;
             case OnboardingCloud:
-                operation.Onboarding.Add("onboardingMethod","2");
+                Operation.Onboarding.Add("onboardingMethod","2");
                 break;
             case OnboardingActivation:
-                operation.Onboarding.Add("onboardingMethod","3");
-                operation.Onboarding.Add("onboardingDetail",ActivationCode);
+                Operation.Onboarding.Add("onboardingMethod","3");
+                Operation.Onboarding.Add("onboardingDetail",ActivationCode);
                 break;
         }
         Operation.Mode = $"Onboarding:{OnboardingMode}";
-        await deviceService.ScanPhoneAsync(operation);
+        await deviceService.ScanPhoneAsync(Operation);
     }
     public bool CanExecuteOnboarding() => OnboardingMode != OnboardingActivation || !string.IsNullOrEmpty(ActivationCode);
 
@@ -164,6 +166,32 @@ public partial class MainViewModel : WizardViewModelBase
 
     #region Provision
 
+    [Preference<bool>("provision-activation")]
+    [ObservableProperty]
+    private bool isModelSelected;
+
+    [Preference<string>("provision-model", "DP-9841")]
+    [ObservableProperty]
+    private string provisionModel = "DP-9841";
+
+    [ObservableProperty] 
+    private string? provisionActivationCode;
+
+    public bool IsCodeVisible => IsModelSelected && ProvisionActivationCode != null;
+
+    partial void OnIsModelSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCodeVisible));
+    }
+    partial void OnProvisionActivationCodeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsCodeVisible));
+    }
+    
+    [ObservableProperty]
+    private List<string> models = new(["DP-9841", "DP-9851", "DP-9861", "DP-9871"]);
+    
+    
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task ProvisionAsync()
     {
@@ -178,23 +206,81 @@ public partial class MainViewModel : WizardViewModelBase
         Operation.Reset();
         appViewModel.Title = "Provisioning";
         Operation.State = OperationState.InProgress;
-        Operation.Mode = "Provision";
-        await deviceService.ScanPhoneAsync(Operation);
-        if (Operation.State == OperationState.Success)
+        if (IsModelSelected)
         {
-            appViewModel.Title = "Provisioning";
-            var result = await webexService.AddDeviceByMac(Settings.User.Organization.Id, Operation.Phone.Mac, Operation.Phone.Pid, SearchSelection.Id);
-            if (result != null)
+            WebexService.ActivationResult result = new WebexService.ActivationResult(ProvisionActivationCode);
+            Operation.Mode = "Provision:ActivationCode";
+            if (string.IsNullOrEmpty(ProvisionActivationCode))
             {
-                Operation.Result = result;
+                result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+            }
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                Operation.Result = result.Error;
                 Operation.State = OperationState.Failure;
                 appViewModel.Title = "Provision";
             }
-            else appViewModel.Title = "Provisioned";
+            else
+            {
+                ProvisionActivationCode = result.Code;
+                Operation.Onboarding.Clear();
+                Operation.Onboarding.Add("onboardingMethod","3");
+                Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                var incorrectModel = false;
+                Operation.Callback = o =>
+                {
+                    if (Operation.Phone?.Pid != null && !string.Equals(Operation.Phone.Pid, ProvisionModel,
+                            StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        incorrectModel = true;
+                        throw new TaskCanceledException($"Incorrect Model, expecting: {ProvisionModel}");
+                    }
+                    return new(new List<NdefRecord>());
+                }; 
+                await deviceService.ScanPhoneAsync(Operation);
+                if (incorrectModel)
+                {
+                    if (await Application.Current?.MainPage?.DisplayAlert("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
+                    {
+                        ProvisionModel = Operation.Phone.Pid;
+                        Operation.Reset();
+                        result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+                        ProvisionActivationCode = result.Code;
+                        Operation.Onboarding.Add("onboardingMethod","3");
+                        Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                        await deviceService.ScanPhoneAsync(Operation);
+                    }
+                }
+                if(Operation.State == OperationState.Success)
+                {
+                    appViewModel.Title = "Provisioned";
+                    ProvisionActivationCode = null;
+                }
+                else
+                {
+                    appViewModel.Title = "Provision";
+                }
+            }
         }
         else
         {
-            appViewModel.Title = "Provision";
+            Operation.Mode = "Provision:MacAddress";
+            await deviceService.ScanPhoneAsync(Operation);
+            if (Operation.State == OperationState.Success)
+            {
+                var result = await webexService.AddDeviceByMac(orgId: Settings.User.Organization.Id, mac: Operation.Phone.Mac, model:Operation.Phone.Pid, personId: SearchSelection.Id);
+                if (result != null)
+                {
+                    Operation.Result = result;
+                    Operation.State = OperationState.Failure;
+                    appViewModel.Title = "Provision";
+                }
+                else appViewModel.Title = "Provisioned";
+            }
+            else
+            {
+                appViewModel.Title = "Provision";
+            }
         }
     }
 
@@ -278,6 +364,8 @@ public partial class MainViewModel : WizardViewModelBase
     {
         try
         {
+            SearchInput = String.Empty;
+            await this.RemoveAsync("SearchInput");
             await settingsViewModel.LoginCommand.ExecuteAsync(null);
         }
         catch (OperationCanceledException e)

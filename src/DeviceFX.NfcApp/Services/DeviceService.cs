@@ -110,7 +110,13 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 {
                     logger.LogDebug("Provisioning Phone");
                     alertMessage("Provisioning Phone");
-                    records = await operation.InvokeCallbackAsync();
+                    var result = await operation.InvokeCallbackAsync();
+                    if(result != null && result.Any()) records.AddRange(result);
+                } 
+                catch (TaskCanceledException e)
+                {
+                    logger.LogWarning(e, "Provisioning Canceled");
+                    return await SetResult(e.Message, cancellationToken: cancellationToken);
                 }
                 catch (Exception e)
                 {
