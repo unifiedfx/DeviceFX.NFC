@@ -9,6 +9,7 @@ public partial class Operation : OperationBase
     private string? result;
     [ObservableProperty] 
     private PhoneDetails? phone;
+    public bool Merge { get; set; }
     public string? Mode { get; set; }
     public string? ActivationCode { get; set; }
     public string? DisplayName { get; set; }
@@ -24,7 +25,11 @@ public partial class Operation : OperationBase
 
     public void Reset()
     {
+        Merge = false;
         Mode = null;
+        ActivationCode = null;
+        DisplayName = null;
+        DisplayNumber = null;
         Result = null;
         Onboarding.Clear();
         Phone = null;

@@ -175,7 +175,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 }
                 if(!string.IsNullOrWhiteSpace(settings.AssetTag))
                     operation.Phone.AssetTag = settings.AssetTag;
-                await inventoryService.AddPhoneAsync(operation.Phone);
+                await inventoryService.AddPhoneAsync(operation.Phone, operation.Merge);
             }
             operation.Result = message;
             operation.State = result ? OperationState.Success : OperationState.Failure;

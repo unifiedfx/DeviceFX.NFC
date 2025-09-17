@@ -18,15 +18,18 @@ public class InventoryService : IInventoryService
         database = new SQLiteAsyncConnection(dbPath);
         database.CreateTableAsync<PhoneDetails>().Wait();
     }
-    public async Task AddPhoneAsync(PhoneDetails phone)
+    public async Task AddPhoneAsync(PhoneDetails phone, bool merge)
     {
-        var existing = await database.FindAsync<PhoneDetails>(phone.Id);
-        if (existing != null)
+        if (merge)
         {
-            phone.Mode ??= existing.Mode;
-            phone.ActivationCode ??= existing.ActivationCode;
-            phone.DisplayName ??= existing.DisplayName;
-            phone.DisplayNumber ??= existing.DisplayNumber;
+            var existing = await database.FindAsync<PhoneDetails>(phone.Id);
+            if (existing != null)
+            {
+                phone.Mode ??= existing.Mode;
+                phone.ActivationCode ??= existing.ActivationCode;
+                phone.DisplayName ??= existing.DisplayName;
+                phone.DisplayNumber ??= existing.DisplayNumber;
+            }
         }
         await database.InsertOrReplaceAsync(phone);
     }
@@ -51,10 +54,10 @@ public class InventoryService : IInventoryService
         {
             // Manually create CSV content
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Id,Mac,Pid,WifiMac,Serial,Vid,TagSerial,NfcVersion,AssetTag,Latitude,Longitude,Postcode,Country,Updated");
+            sb.AppendLine("Id,Mac,Pid,WifiMac,Serial,Vid,TagSerial,NfcVersion,AssetTag,Mode,ActivationCode,Name,Number,Latitude,Longitude,Postcode,Country,Updated");
             foreach (var record in records)
             {
-                sb.AppendLine($"\"{record.Id}\",\"{record.Mac}\",\"{record.Pid}\",\"{record.WifiMac}\",\"{record.Serial}\",\"{record.Vid}\",\"{record.TagSerial}\",\"{record.NfcVersion}\",\"{record.AssetTag}\",\"{record.Latitude}\",\"{record.Longitude}\",\"{record.Postcode}\",\"{record.Country}\",\"{record.Updated:yyyy-MM-ddTHH:mm:ssZ}\"");
+                sb.AppendLine($"\"{record.Id}\",\"{record.Mac}\",\"{record.Pid}\",\"{record.WifiMac}\",\"{record.Serial}\",\"{record.Vid}\",\"{record.TagSerial}\",\"{record.NfcVersion}\",\"{record.AssetTag}\",\"{record.Mode}\",\"{record.ActivationCode}\",\"{record.DisplayName}\",\"{record.DisplayNumber}\",\"{record.Latitude}\",\"{record.Longitude}\",\"{record.Postcode}\",\"{record.Country}\",\"{record.Updated:yyyy-MM-ddTHH:mm:ssZ}\"");
             }
             await File.WriteAllTextAsync(filePath, sb.ToString());
         }

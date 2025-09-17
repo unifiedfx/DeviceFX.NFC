@@ -88,9 +88,11 @@ public partial class MainViewModel : WizardViewModelBase
         {
             case OnboardingCucm:
                 Operation.Onboarding.Add("onboardingMethod","4");
+                Operation.Merge = true;
                 break;
             case OnboardingCloud:
                 Operation.Onboarding.Add("onboardingMethod","2");
+                Operation.Merge = true;
                 break;
             case OnboardingActivation:
                 Operation.Onboarding.Add("onboardingMethod","3");
@@ -340,8 +342,12 @@ public partial class MainViewModel : WizardViewModelBase
         {
             Operation.Reset();
             Operation.Mode = "Inventory";
-            if(long.TryParse(Settings.AutoNumber, out var autoNumber)) 
+            Operation.Merge = true;
+            if (long.TryParse(Settings.AutoNumber, out var autoNumber))
+            {
                 Operation.DisplayNumber = autoNumber.ToString();
+                Operation.Merge = false;
+            }
             else autoNumber = -1;
             await deviceService.ScanPhoneAsync(operation);
             if (operation.State == OperationState.Success && autoNumber++ > 0)
