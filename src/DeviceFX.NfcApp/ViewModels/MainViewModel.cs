@@ -120,6 +120,11 @@ public partial class MainViewModel : WizardViewModelBase
     [NotifyCanExecuteChangedFor(nameof(ProvisionCommand))]
     private SearchResult? searchSelection;
     
+    partial void OnSearchSelectionChanged(SearchResult? value)
+    {
+        ProvisionActivationCode = null;
+    }
+    
     [ObservableProperty]
     private ObservableCollection<SearchResult> searchResults = [];
 

@@ -180,5 +180,6 @@ public partial class PhoneDetails : ObservableObject
         }
     }
 
-    public override string ToString() => $"{Id} ({Pid})";
+    public override string ToString() => 
+        string.IsNullOrWhiteSpace(DisplayNumber)? $"{Mac},{Pid}" : $"{Mac},{Pid}({DisplayNumber})";
 }
