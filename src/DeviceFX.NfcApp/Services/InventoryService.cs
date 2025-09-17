@@ -73,6 +73,35 @@ public class InventoryService : IInventoryService
                 Sheet sheet = new Sheet() { Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "Sheet1" };
                 sheets.Append(sheet);
 
+               
+                var stylesheet = new Stylesheet();
+                
+                var numberingFormats = new NumberingFormats();
+                numberingFormats.Append(new NumberingFormat()
+                {
+                    NumberFormatId = 164,
+                    FormatCode = StringValue.FromString("dd/mm/yyyy hh:mm:ss")
+                });
+                
+                var cellFormats = new CellFormats();
+                cellFormats.Append(new CellFormat());
+                cellFormats.Append(new CellFormat()
+                {
+                    NumberFormatId = 164,
+                    FontId = 0,
+                    FillId = 0,
+                    BorderId = 0,
+                    FormatId = 0,
+                    ApplyNumberFormat = BooleanValue.FromBoolean(true)
+                });
+                
+                stylesheet.Append(cellFormats);
+                stylesheet.Append(numberingFormats);
+                
+                var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+                stylesPart.Stylesheet = stylesheet;
+                stylesPart.Stylesheet.Save();
+                
                 SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();        
                 Row headerRow = new Row();
                 headerRow.Append(CreateCell("A1", "Id"));
@@ -115,7 +144,7 @@ public class InventoryService : IInventoryService
                     if(record.Longitude != null) dataRow.Append(CreateCell($"O{rowIndex}", record.Longitude, CellValues.String));
                     if(record.Postcode != null) dataRow.Append(CreateCell($"P{rowIndex}", record.Postcode, CellValues.String));
                     if(record.Country != null) dataRow.Append(CreateCell($"Q{rowIndex}", record.Country, CellValues.String));
-                    dataRow.Append(CreateCell($"R{rowIndex}", record.Updated.ToString("o"), CellValues.Date));
+                    dataRow.Append(CreateDateCell($"R{rowIndex}", record.Updated));
                     sheetData.Append(dataRow);
                     rowIndex++;
                 }
@@ -132,6 +161,16 @@ public class InventoryService : IInventoryService
                 CellReference = cellReference,
                 DataType = dataType ?? CellValues.String,
                 CellValue = new CellValue(value)
+            };
+        }
+        Cell CreateDateCell(string cellReference, DateTime value)
+        {
+            return new Cell()
+            {
+                CellReference = cellReference,
+                DataType = CellValues.Date,
+                CellValue = new CellValue(value),
+                StyleIndex = 1
             };
         }
     }

@@ -344,7 +344,7 @@ public partial class MainViewModel : WizardViewModelBase
                 Operation.DisplayNumber = autoNumber.ToString();
             else autoNumber = -1;
             await deviceService.ScanPhoneAsync(operation);
-            if (autoNumber++ > 0)
+            if (operation.State == OperationState.Success && autoNumber++ > 0)
             {
                 Settings.AutoNumber = autoNumber.ToString();
                 await Settings.SaveAsync(nameof(Settings.AutoNumber));
