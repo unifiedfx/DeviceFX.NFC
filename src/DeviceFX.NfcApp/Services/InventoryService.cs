@@ -20,6 +20,14 @@ public class InventoryService : IInventoryService
     }
     public async Task AddPhoneAsync(PhoneDetails phone)
     {
+        var existing = await database.FindAsync<PhoneDetails>(phone.Id);
+        if (existing != null)
+        {
+            phone.Mode ??= existing.Mode;
+            phone.ActivationCode ??= existing.ActivationCode;
+            phone.DisplayName ??= existing.DisplayName;
+            phone.DisplayNumber ??= existing.DisplayNumber;
+        }
         await database.InsertOrReplaceAsync(phone);
     }
 
@@ -30,7 +38,7 @@ public class InventoryService : IInventoryService
 
     public async Task<IList<PhoneDetails>> GetPhonesAsync()
     {
-        return await database.Table<PhoneDetails>().ToListAsync();
+        return await database.Table<PhoneDetails>().OrderByDescending(p => p.Updated).ToListAsync();
     }
     
     public async Task<string?> ExportAsync(string format = "csv")
@@ -76,11 +84,15 @@ public class InventoryService : IInventoryService
                 headerRow.Append(CreateCell("G1", "TagSerial"));
                 headerRow.Append(CreateCell("H1", "NfcVersion"));
                 headerRow.Append(CreateCell("I1", "AssetTag"));
-                headerRow.Append(CreateCell("J1", "Latitude"));
-                headerRow.Append(CreateCell("K1", "Longitude"));
-                headerRow.Append(CreateCell("L1", "Postcode"));
-                headerRow.Append(CreateCell("M1", "Country"));
-                headerRow.Append(CreateCell("N1", "Updated", CellValues.Date));
+                headerRow.Append(CreateCell("J1", "Mode"));
+                headerRow.Append(CreateCell("K1", "ActivationCode"));
+                headerRow.Append(CreateCell("L1", "Name"));
+                headerRow.Append(CreateCell("M1", "Number"));
+                headerRow.Append(CreateCell("N1", "Latitude"));
+                headerRow.Append(CreateCell("O1", "Longitude"));
+                headerRow.Append(CreateCell("P1", "Postcode"));
+                headerRow.Append(CreateCell("Q1", "Country"));
+                headerRow.Append(CreateCell("R1", "Updated", CellValues.Date));
                 sheetData.Append(headerRow);
                 uint rowIndex = 2;
                 foreach (var record in records)
@@ -95,11 +107,15 @@ public class InventoryService : IInventoryService
                     if(record.TagSerial != null) dataRow.Append(CreateCell($"G{rowIndex}", record.TagSerial, CellValues.String));
                     if(record.NfcVersion != null) dataRow.Append(CreateCell($"H{rowIndex}", record.NfcVersion, CellValues.String));
                     if(record.AssetTag != null) dataRow.Append(CreateCell($"I{rowIndex}", record.AssetTag, CellValues.String));
-                    if(record.Latitude != null) dataRow.Append(CreateCell($"J{rowIndex}", record.Latitude, CellValues.String));
-                    if(record.Longitude != null) dataRow.Append(CreateCell($"K{rowIndex}", record.Longitude, CellValues.String));
-                    if(record.Postcode != null) dataRow.Append(CreateCell($"L{rowIndex}", record.Postcode, CellValues.String));
-                    if(record.Country != null) dataRow.Append(CreateCell($"M{rowIndex}", record.Country, CellValues.String));
-                    dataRow.Append(CreateCell($"N{rowIndex}", record.Updated.ToString("o"), CellValues.Date));
+                    if(record.Mode != null) dataRow.Append(CreateCell($"J{rowIndex}", record.Mode, CellValues.String));
+                    if(record.ActivationCode != null) dataRow.Append(CreateCell($"K{rowIndex}", record.ActivationCode, CellValues.String));
+                    if(record.DisplayName != null) dataRow.Append(CreateCell($"L{rowIndex}", record.DisplayName, CellValues.String));
+                    if(record.DisplayNumber != null) dataRow.Append(CreateCell($"M{rowIndex}", record.DisplayNumber, CellValues.String));
+                    if(record.Latitude != null) dataRow.Append(CreateCell($"N{rowIndex}", record.Latitude, CellValues.String));
+                    if(record.Longitude != null) dataRow.Append(CreateCell($"O{rowIndex}", record.Longitude, CellValues.String));
+                    if(record.Postcode != null) dataRow.Append(CreateCell($"P{rowIndex}", record.Postcode, CellValues.String));
+                    if(record.Country != null) dataRow.Append(CreateCell($"Q{rowIndex}", record.Country, CellValues.String));
+                    dataRow.Append(CreateCell($"R{rowIndex}", record.Updated.ToString("o"), CellValues.Date));
                     sheetData.Append(dataRow);
                     rowIndex++;
                 }

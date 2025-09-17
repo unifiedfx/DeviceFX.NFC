@@ -28,6 +28,11 @@
             <converters:StringMapperConverter x:Key="BackStringConverter" DefaultValue="Back"/>
             <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
             <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <toolkit:EnumToBoolConverter x:Key="OperationIdleConverter">
+                <toolkit:EnumToBoolConverter.TrueValues>
+                    <model:OperationState>Idle</model:OperationState>
+                </toolkit:EnumToBoolConverter.TrueValues>
+            </toolkit:EnumToBoolConverter>
             <toolkit:EnumToBoolConverter x:Key="OperationSuccessConverter">
                 <toolkit:EnumToBoolConverter.TrueValues>
                     <model:OperationState>Success</model:OperationState>
@@ -57,16 +62,12 @@
                             <VisualState.Setters>
                                 <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
                                 <Setter Property="TextColor" Value="White" />
-                                <!-- <Setter Property="BorderColor" Value="#005EA6" /> -->
-                                <!-- <Setter Property="BorderWidth" Value="2" /> -->
                             </VisualState.Setters>
                         </VisualState>
                         <VisualState x:Name="Unchecked">
                             <VisualState.Setters>
                                 <Setter Property="BackgroundColor" Value="LightGray" />
                                 <Setter Property="TextColor" Value="Black" />
-                                <!-- <Setter Property="BorderColor" Value="#005EA6" /> -->
-                                <!-- <Setter Property="BorderWidth" Value="2" /> -->
                             </VisualState.Setters>
                         </VisualState>
                     </VisualStateGroup>
@@ -104,9 +105,9 @@
                     <HorizontalStackLayout IsVisible="{Binding SearchSelection.Number, Converter={StaticResource IsNotNullConverter}}">
                         <Label Text="Mode: " VerticalTextAlignment="Center" ></Label>
                         <Border StrokeShape="RoundRectangle 10" Stroke="Black">
-                            <HorizontalStackLayout>
+                            <HorizontalStackLayout IsEnabled="{Binding Operation.State, Converter={StaticResource OperationIdleConverter}}">
                                 <RadioButton Content="MAC" FontSize="18" IsChecked="{Binding IsModelSelected, Converter={StaticResource InvertedBoolConverter}}"/>
-                                <RadioButton Content="Activation" FontSize="18" IsChecked="{Binding IsModelSelected}"/>
+                                <RadioButton Content="Activation Code" FontSize="18" IsChecked="{Binding IsModelSelected}"/>
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>
@@ -118,7 +119,7 @@
                             </OnPlatform>                            
                         </HorizontalStackLayout.Margin>
                         <Label Text="Model: " VerticalTextAlignment="Center"></Label>
-                        <Picker Title="Select Model" MaximumHeightRequest="{OnPlatform iOS=30, Android=44}" MinimumWidthRequest="150" FontSize="20" FontAttributes="Italic" ItemsSource="{Binding Models}" SelectedItem="{Binding ProvisionModel, Mode=TwoWay}">
+                        <Picker Title="Select Model" MaximumHeightRequest="{OnPlatform iOS=30, Android=44}" MinimumWidthRequest="150" FontSize="20" FontAttributes="Italic" ItemsSource="{Binding Models}" SelectedItem="{Binding ProvisionModel, Mode=TwoWay}" IsEnabled="{Binding Operation.State, Converter={StaticResource OperationIdleConverter}}">
                         </Picker>
                     </HorizontalStackLayout>
                     <HorizontalStackLayout IsVisible="{Binding IsCodeVisible}">
@@ -145,6 +146,10 @@
                         <Label Text="Serial: "></Label>
                         <Label Text="{Binding Operation.Phone.Serial}"></Label>
                     </HorizontalStackLayout>
+                    <HorizontalStackLayout IsVisible="{Binding ProvisionResultActivationCode, Converter={StaticResource IsNotNullConverter}}">
+                        <Label Text="Code: " VerticalTextAlignment="Center"></Label>
+                        <Label Text="{Binding ProvisionResultActivationCode, Converter={StaticResource CodeFormatter}}" VerticalTextAlignment="Center"></Label>
+                    </HorizontalStackLayout>
                     <VerticalStackLayout Spacing="10">
                         <Label Text="Result" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
                         <Label Text="Success" TextColor="Green" HorizontalTextAlignment="Center"></Label>
@@ -153,7 +158,7 @@
             </Border>
             <Border Grid.Row="2" BackgroundColor="LightGray" StrokeShape="RoundRectangle 10" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
                 <VerticalStackLayout Padding="10" Spacing="20" IsVisible="{Binding Operation.State, Converter={StaticResource OperationFailureConverter}}">
-                    <Label Text="Phone" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center"></Label>
+                    <Label Text="Phone" FontSize="22" TextDecorations="Underline" HorizontalTextAlignment="Center" IsVisible="{Binding Operation.Phone.Mac, Converter= {StaticResource IsNotNullConverter}}"></Label>
                     <HorizontalStackLayout IsVisible="{Binding Operation.Phone.Mac, Converter= {StaticResource IsNotNullConverter}}">
                         <Label Text="Mac: "></Label>
                         <Label Text="{Binding Operation.Phone.Mac}"></Label>

@@ -139,7 +139,8 @@ public static class MauiProgram
             {
                 if (category == null) return false;
                 if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
-                return true;
+                var settings = Application.Current?.Windows[0].Handler?.MauiContext?.Services.GetService<Settings>();
+                return settings is not {EnableDebug: false};
             });
         }
         builder.AddNfc();

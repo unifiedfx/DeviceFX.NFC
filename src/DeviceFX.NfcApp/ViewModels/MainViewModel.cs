@@ -95,6 +95,7 @@ public partial class MainViewModel : WizardViewModelBase
             case OnboardingActivation:
                 Operation.Onboarding.Add("onboardingMethod","3");
                 Operation.Onboarding.Add("onboardingDetail",ActivationCode);
+                Operation.ActivationCode = ActivationCode;
                 break;
         }
         Operation.Mode = $"Onboarding:{OnboardingMode}";
@@ -114,6 +115,7 @@ public partial class MainViewModel : WizardViewModelBase
     
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SelectedCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ProvisionCommand))]
     private SearchResult? searchSelection;
     
     [ObservableProperty]
@@ -174,8 +176,10 @@ public partial class MainViewModel : WizardViewModelBase
     [ObservableProperty]
     private string provisionModel = "DP-9841";
 
-    [ObservableProperty] 
+    [ObservableProperty]
     private string? provisionActivationCode;
+    [ObservableProperty]
+    private string? provisionResultActivationCode;
 
     public bool IsCodeVisible => IsModelSelected && ProvisionActivationCode != null;
 
@@ -206,10 +210,13 @@ public partial class MainViewModel : WizardViewModelBase
         Operation.Reset();
         appViewModel.Title = "Provisioning";
         Operation.State = OperationState.InProgress;
+        ProvisionResultActivationCode = null;
         if (IsModelSelected)
         {
             WebexService.ActivationResult result = new WebexService.ActivationResult(ProvisionActivationCode);
             Operation.Mode = "Provision:ActivationCode";
+            Operation.DisplayName = SearchSelection?.Name;
+            Operation.DisplayNumber = SearchSelection?.Number;
             if (string.IsNullOrEmpty(ProvisionActivationCode))
             {
                 result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
@@ -223,20 +230,22 @@ public partial class MainViewModel : WizardViewModelBase
             else
             {
                 ProvisionActivationCode = result.Code;
+                Operation.ActivationCode = ProvisionActivationCode;
                 Operation.Onboarding.Clear();
                 Operation.Onboarding.Add("onboardingMethod","3");
                 Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
                 var incorrectModel = false;
                 Operation.Callback = o =>
                 {
-                    if (Operation.Phone?.Pid != null && !string.Equals(Operation.Phone.Pid, ProvisionModel,
+                    if (o.Phone?.Pid != null && !string.Equals(o.Phone.Pid, ProvisionModel,
                             StringComparison.InvariantCultureIgnoreCase))
                     {
                         incorrectModel = true;
-                        throw new TaskCanceledException($"Incorrect Model, expecting: {ProvisionModel}");
+                        o.State = OperationState.Failure;
+                        o.Result = $"Incorrect Model, expecting: {ProvisionModel}";
                     }
                     return new(new List<NdefRecord>());
-                }; 
+                };
                 await deviceService.ScanPhoneAsync(Operation);
                 if (incorrectModel)
                 {
@@ -244,16 +253,30 @@ public partial class MainViewModel : WizardViewModelBase
                     {
                         ProvisionModel = Operation.Phone.Pid;
                         Operation.Reset();
+                        Operation.State = OperationState.InProgress;
+                        Operation.Mode = "Provision:ActivationCode";
+                        Operation.DisplayName = SearchSelection?.Name;
+                        Operation.DisplayNumber = SearchSelection?.Number;
                         result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
-                        ProvisionActivationCode = result.Code;
-                        Operation.Onboarding.Add("onboardingMethod","3");
-                        Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
-                        await deviceService.ScanPhoneAsync(Operation);
+                        if (!string.IsNullOrEmpty(result.Code))
+                        {
+                            ProvisionActivationCode = result.Code;
+                            Operation.ActivationCode = ProvisionActivationCode;
+                            Operation.Onboarding.Add("onboardingMethod","3");
+                            Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                            await deviceService.ScanPhoneAsync(Operation);
+                        }
+                        else
+                        {
+                            Operation.State = OperationState.Failure;
+                            Operation.Result = result.Error;
+                        }
                     }
                 }
                 if(Operation.State == OperationState.Success)
                 {
                     appViewModel.Title = "Provisioned";
+                    ProvisionResultActivationCode = ProvisionActivationCode;
                     ProvisionActivationCode = null;
                 }
                 else
@@ -265,6 +288,8 @@ public partial class MainViewModel : WizardViewModelBase
         else
         {
             Operation.Mode = "Provision:MacAddress";
+            Operation.DisplayName = SearchSelection?.Name;
+            Operation.DisplayNumber = SearchSelection?.Number;
             await deviceService.ScanPhoneAsync(Operation);
             if (Operation.State == OperationState.Success)
             {
@@ -315,7 +340,15 @@ public partial class MainViewModel : WizardViewModelBase
         {
             Operation.Reset();
             Operation.Mode = "Inventory";
+            if(long.TryParse(Settings.AutoNumber, out var autoNumber)) 
+                Operation.DisplayNumber = autoNumber.ToString();
+            else autoNumber = -1;
             await deviceService.ScanPhoneAsync(operation);
+            if (autoNumber++ > 0)
+            {
+                Settings.AutoNumber = autoNumber.ToString();
+                await Settings.SaveAsync(nameof(Settings.AutoNumber));
+            }
             await LoadPhonesAsync();
         }
         catch (Exception e)

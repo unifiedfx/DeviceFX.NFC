@@ -10,6 +10,9 @@ public partial class Operation : OperationBase
     [ObservableProperty] 
     private PhoneDetails? phone;
     public string? Mode { get; set; }
+    public string? ActivationCode { get; set; }
+    public string? DisplayName { get; set; }
+    public string? DisplayNumber { get; set; }
 
     public IDictionary<string,string> Onboarding { get; } = new Dictionary<string, string>();
     public Func<Operation, ValueTask<List<NdefRecord>>>? Callback { get; set; }

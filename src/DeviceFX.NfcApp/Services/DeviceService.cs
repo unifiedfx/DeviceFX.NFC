@@ -29,6 +29,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                     VID: V01
                     """);
                 operation.State = OperationState.Success;
+                operation.Phone.Update(operation);
                 await SetResult($"Saved to {operation.Phone.Pid}", true);
             }
             else await SetResult($"Cancelled");
@@ -71,6 +72,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             alertMessage("Reading Phone Details");
             NdefMessage? message = null;
             string? version = null;
+            operation.Phone = new PhoneDetails();
             try
             {
                 message = await stream.ReadNdefMessageAsync(cancellationToken);
@@ -101,6 +103,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 TagSerial = BitConverter.ToString(stream.ReadTagSerial()).Replace('-',':'),
                 NfcVersion = version
             };
+            operation.Phone.Update(operation);
             if(certRecord?.Payload != null) operation.Phone.Certificate = certRecord.Payload;
             // Write onboarding details
             List<NdefRecord> records = [];
@@ -112,6 +115,8 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                     alertMessage("Provisioning Phone");
                     var result = await operation.InvokeCallbackAsync();
                     if(result != null && result.Any()) records.AddRange(result);
+                    if(operation.State == OperationState.Failure)
+                        return await SetResult(operation.Result, cancellationToken: cancellationToken);
                 } 
                 catch (TaskCanceledException e)
                 {
@@ -167,8 +172,9 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                     operation.Phone.Latitude = location.lat;
                     operation.Phone.Postcode = location.address?.postcode;
                     operation.Phone.Country = location.address?.country;
-                    operation.Phone.AssetTag = settings.AsssetTag;
                 }
+                if(!string.IsNullOrWhiteSpace(settings.AssetTag))
+                    operation.Phone.AssetTag = settings.AssetTag;
                 await inventoryService.AddPhoneAsync(operation.Phone);
             }
             operation.Result = message;

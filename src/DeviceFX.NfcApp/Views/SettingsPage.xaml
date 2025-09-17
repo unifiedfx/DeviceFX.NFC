@@ -21,7 +21,12 @@
                     <Label Text="Asset Tag:" FontSize="18" VerticalOptions="Center" Padding="0,10,0,0"/>
                     <Entry Text="{Binding Settings.AssetTag}" Placeholder="Asset Tag"></Entry>
                 </StackLayout>
+                <StackLayout>
+                    <Label Text="Auto Number:" FontSize="18" VerticalOptions="Center" Padding="0,10,0,0"/>
+                    <Entry IsSpellCheckEnabled="False" ClearButtonVisibility="WhileEditing" Keyboard="Numeric" Text="{Binding Settings.AutoNumber}" Placeholder="Auto-incrementing Number"></Entry>
+                </StackLayout>
                 <shared:LabelCheckboxView LabelText="Save Location" IsToggled="{Binding Settings.IncludeLocation}" Command="{Binding LocationChangedCommand}"></shared:LabelCheckboxView>
+                <shared:LabelCheckboxView LabelText="Enable Debugging" IsToggled="{Binding Settings.EnableDebug}"></shared:LabelCheckboxView>
             </StackLayout>
             <StackLayout Grid.Row="2" IsVisible="{Binding Settings.User.IsLoggedIn}" Spacing="20">
                 <Image Source="{Binding Settings.User.Picture}"
