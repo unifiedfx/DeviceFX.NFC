@@ -137,7 +137,7 @@ public static class MauiProgram
             });
             builder.Logging.AddFilter((category, level) =>
             {
-                if (category == null) return false;
+                if (category == null || level == LogLevel.Trace) return false;
                 if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
                 var settings = Application.Current?.Windows[0].Handler?.MauiContext?.Services.GetService<Settings>();
                 return settings is not {EnableDebug: false};
@@ -155,7 +155,7 @@ public static class MauiProgram
 #endif
 
 #if DEBUG
-        builder.Logging.AddDebug();
+        builder.Logging.AddConsole();
 #endif
         return builder.Build();
     }
