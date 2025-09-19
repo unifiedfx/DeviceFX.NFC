@@ -3,28 +3,43 @@
 <toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+               xmlns:toolkit2="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               xmlns:helpers="clr-namespace:DeviceFX.NfcApp.Helpers"
+               WidthRequest="350"
+               BackgroundColor="LightGray"
+               Margin="5, 20"
+               Padding="0"
                x:Class="DeviceFX.NfcApp.Views.PhoneDetailsPopup">
     <toolkit:Popup.Resources>
+        <ResourceDictionary>
+            <toolkit2:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <helpers:ActivationCodeFormatter x:Key="CodeFormatter" />
+        </ResourceDictionary>
         <Style x:Key="CenteredLabelStyle" TargetType="Label">
             <Setter Property="FontAttributes" Value="Bold" />
             <Setter Property="FontSize" Value="18" />
             <Setter Property="HorizontalTextAlignment" Value="Center" />
         </Style>
     </toolkit:Popup.Resources>
-    <VerticalStackLayout Spacing="10" Padding="20">
+    <VerticalStackLayout Spacing="10" Padding="0" BackgroundColor="LightGray">
         <CarouselView ItemsSource="{Binding PhoneList}"
                       CurrentItem="{Binding SelectedPhone}"
                       IndicatorView="indicatorView"
                       Loop="False" 
-                      HeightRequest="300">
+                      WidthRequest="350"
+                      HeightRequest="420">
             <CarouselView.ItemTemplate>
                 <DataTemplate>
-                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 10">
+                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 20" WidthRequest="300">
                         <StackLayout Spacing="5" HorizontalOptions="Center">
                             <Image Source="{Binding Image}" HeightRequest="200" Aspect="AspectFit" />
                             <Label Text="{Binding Pid}" Style="{StaticResource CenteredLabelStyle}"/>
                             <Label Text="{Binding Mac, StringFormat='MAC: {0}'}" Style="{StaticResource CenteredLabelStyle}"/>
                             <Label Text="{Binding Serial, StringFormat='Serial: {0}'}" Style="{StaticResource CenteredLabelStyle}"/>
+                            <Label Text="{Binding AssetTag, StringFormat='Asset Tag: {0}'}" Style="{StaticResource CenteredLabelStyle}" IsVisible="{Binding AssetTag, Converter={StaticResource IsNotNullConverter}}"/>
+                            <Label Text="{Binding ActivationCode, StringFormat='Activation: {0}', Converter={StaticResource CodeFormatter}}" IsVisible="{Binding ActivationCode, Converter={StaticResource IsNotNullConverter}}" Style="{StaticResource CenteredLabelStyle}"/>
+                            <Label Text="{Binding DisplayName, StringFormat='Name: {0}'}" IsVisible="{Binding DisplayName, Converter={StaticResource IsNotNullConverter}}" Style="{StaticResource CenteredLabelStyle}"/>
+                            <Label Text="{Binding DisplayNumber, StringFormat='Number: {0}'}" IsVisible="{Binding DisplayNumber, Converter={StaticResource IsNotNullConverter}}" Style="{StaticResource CenteredLabelStyle}"/>
                         </StackLayout>
                     </Border>
                 </DataTemplate>

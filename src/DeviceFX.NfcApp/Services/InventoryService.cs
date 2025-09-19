@@ -18,8 +18,19 @@ public class InventoryService : IInventoryService
         database = new SQLiteAsyncConnection(dbPath);
         database.CreateTableAsync<PhoneDetails>().Wait();
     }
-    public async Task AddPhoneAsync(PhoneDetails phone)
+    public async Task AddPhoneAsync(PhoneDetails phone, bool merge)
     {
+        if (merge)
+        {
+            var existing = await database.FindAsync<PhoneDetails>(phone.Id);
+            if (existing != null)
+            {
+                phone.Mode ??= existing.Mode;
+                phone.ActivationCode ??= existing.ActivationCode;
+                phone.DisplayName ??= existing.DisplayName;
+                phone.DisplayNumber ??= existing.DisplayNumber;
+            }
+        }
         await database.InsertOrReplaceAsync(phone);
     }
 
@@ -30,7 +41,7 @@ public class InventoryService : IInventoryService
 
     public async Task<IList<PhoneDetails>> GetPhonesAsync()
     {
-        return await database.Table<PhoneDetails>().ToListAsync();
+        return await database.Table<PhoneDetails>().OrderByDescending(p => p.Updated).ToListAsync();
     }
     
     public async Task<string?> ExportAsync(string format = "csv")
@@ -43,10 +54,10 @@ public class InventoryService : IInventoryService
         {
             // Manually create CSV content
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Id,Mac,Pid,WifiMac,Serial,Vid,TagSerial,NfcVersion,AssetTag,Latitude,Longitude,Postcode,Country,Updated");
+            sb.AppendLine("Id,Mac,Pid,WifiMac,Serial,Vid,TagSerial,NfcVersion,AssetTag,Mode,ActivationCode,Name,Number,Latitude,Longitude,Postcode,Country,Updated");
             foreach (var record in records)
             {
-                sb.AppendLine($"\"{record.Id}\",\"{record.Mac}\",\"{record.Pid}\",\"{record.WifiMac}\",\"{record.Serial}\",\"{record.Vid}\",\"{record.TagSerial}\",\"{record.NfcVersion}\",\"{record.AssetTag}\",\"{record.Latitude}\",\"{record.Longitude}\",\"{record.Postcode}\",\"{record.Country}\",\"{record.Updated:yyyy-MM-ddTHH:mm:ssZ}\"");
+                sb.AppendLine($"\"{record.Id}\",\"{record.Mac}\",\"{record.Pid}\",\"{record.WifiMac}\",\"{record.Serial}\",\"{record.Vid}\",\"{record.TagSerial}\",\"{record.NfcVersion}\",\"{record.AssetTag}\",\"{record.Mode}\",\"{record.ActivationCode}\",\"{record.DisplayName}\",\"{record.DisplayNumber}\",\"{record.Latitude}\",\"{record.Longitude}\",\"{record.Postcode}\",\"{record.Country}\",\"{record.Updated:yyyy-MM-ddTHH:mm:ssZ}\"");
             }
             await File.WriteAllTextAsync(filePath, sb.ToString());
         }
@@ -65,6 +76,35 @@ public class InventoryService : IInventoryService
                 Sheet sheet = new Sheet() { Id = spreadsheetDocument.WorkbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "Sheet1" };
                 sheets.Append(sheet);
 
+               
+                var stylesheet = new Stylesheet();
+                
+                var numberingFormats = new NumberingFormats();
+                numberingFormats.Append(new NumberingFormat()
+                {
+                    NumberFormatId = 164,
+                    FormatCode = StringValue.FromString("dd/mm/yyyy hh:mm:ss")
+                });
+                
+                var cellFormats = new CellFormats();
+                cellFormats.Append(new CellFormat());
+                cellFormats.Append(new CellFormat()
+                {
+                    NumberFormatId = 164,
+                    FontId = 0,
+                    FillId = 0,
+                    BorderId = 0,
+                    FormatId = 0,
+                    ApplyNumberFormat = BooleanValue.FromBoolean(true)
+                });
+                
+                stylesheet.Append(cellFormats);
+                stylesheet.Append(numberingFormats);
+                
+                var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
+                stylesPart.Stylesheet = stylesheet;
+                stylesPart.Stylesheet.Save();
+                
                 SheetData sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>();        
                 Row headerRow = new Row();
                 headerRow.Append(CreateCell("A1", "Id"));
@@ -76,11 +116,15 @@ public class InventoryService : IInventoryService
                 headerRow.Append(CreateCell("G1", "TagSerial"));
                 headerRow.Append(CreateCell("H1", "NfcVersion"));
                 headerRow.Append(CreateCell("I1", "AssetTag"));
-                headerRow.Append(CreateCell("J1", "Latitude"));
-                headerRow.Append(CreateCell("K1", "Longitude"));
-                headerRow.Append(CreateCell("L1", "Postcode"));
-                headerRow.Append(CreateCell("M1", "Country"));
-                headerRow.Append(CreateCell("N1", "Updated", CellValues.Date));
+                headerRow.Append(CreateCell("J1", "Mode"));
+                headerRow.Append(CreateCell("K1", "ActivationCode"));
+                headerRow.Append(CreateCell("L1", "Name"));
+                headerRow.Append(CreateCell("M1", "Number"));
+                headerRow.Append(CreateCell("N1", "Latitude"));
+                headerRow.Append(CreateCell("O1", "Longitude"));
+                headerRow.Append(CreateCell("P1", "Postcode"));
+                headerRow.Append(CreateCell("Q1", "Country"));
+                headerRow.Append(CreateCell("R1", "Updated", CellValues.Date));
                 sheetData.Append(headerRow);
                 uint rowIndex = 2;
                 foreach (var record in records)
@@ -95,11 +139,15 @@ public class InventoryService : IInventoryService
                     if(record.TagSerial != null) dataRow.Append(CreateCell($"G{rowIndex}", record.TagSerial, CellValues.String));
                     if(record.NfcVersion != null) dataRow.Append(CreateCell($"H{rowIndex}", record.NfcVersion, CellValues.String));
                     if(record.AssetTag != null) dataRow.Append(CreateCell($"I{rowIndex}", record.AssetTag, CellValues.String));
-                    if(record.Latitude != null) dataRow.Append(CreateCell($"J{rowIndex}", record.Latitude, CellValues.String));
-                    if(record.Longitude != null) dataRow.Append(CreateCell($"K{rowIndex}", record.Longitude, CellValues.String));
-                    if(record.Postcode != null) dataRow.Append(CreateCell($"L{rowIndex}", record.Postcode, CellValues.String));
-                    if(record.Country != null) dataRow.Append(CreateCell($"M{rowIndex}", record.Country, CellValues.String));
-                    dataRow.Append(CreateCell($"N{rowIndex}", record.Updated.ToString("o"), CellValues.Date));
+                    if(record.Mode != null) dataRow.Append(CreateCell($"J{rowIndex}", record.Mode, CellValues.String));
+                    if(record.ActivationCode != null) dataRow.Append(CreateCell($"K{rowIndex}", record.ActivationCode, CellValues.String));
+                    if(record.DisplayName != null) dataRow.Append(CreateCell($"L{rowIndex}", record.DisplayName, CellValues.String));
+                    if(record.DisplayNumber != null) dataRow.Append(CreateCell($"M{rowIndex}", record.DisplayNumber, CellValues.String));
+                    if(record.Latitude != null) dataRow.Append(CreateCell($"N{rowIndex}", record.Latitude, CellValues.String));
+                    if(record.Longitude != null) dataRow.Append(CreateCell($"O{rowIndex}", record.Longitude, CellValues.String));
+                    if(record.Postcode != null) dataRow.Append(CreateCell($"P{rowIndex}", record.Postcode, CellValues.String));
+                    if(record.Country != null) dataRow.Append(CreateCell($"Q{rowIndex}", record.Country, CellValues.String));
+                    dataRow.Append(CreateDateCell($"R{rowIndex}", record.Updated));
                     sheetData.Append(dataRow);
                     rowIndex++;
                 }
@@ -116,6 +164,16 @@ public class InventoryService : IInventoryService
                 CellReference = cellReference,
                 DataType = dataType ?? CellValues.String,
                 CellValue = new CellValue(value)
+            };
+        }
+        Cell CreateDateCell(string cellReference, DateTime value)
+        {
+            return new Cell()
+            {
+                CellReference = cellReference,
+                DataType = CellValues.Date,
+                CellValue = new CellValue(value),
+                StyleIndex = 1
             };
         }
     }

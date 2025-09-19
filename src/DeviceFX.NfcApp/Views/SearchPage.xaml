@@ -8,36 +8,35 @@
                         Group="Provision"
                         Title="Search"
                         HideSoftInputOnTapped="True"
+                        x:Name="This"
                         x:Class="DeviceFX.NfcApp.Views.SearchPage">
     <ContentPage.Content>
         <Grid Padding="15" RowDefinitions="Auto, Auto, *, 50">
-            <Label Text="User/Workspace to assign" FontSize="20" VerticalOptions="Center"/>
+            <Label Text="User to assign" FontSize="20" VerticalOptions="Center"/>
             <StackLayout Grid.Row="1">
                 <SearchBar x:Name="searchBar"
-                           Unfocused="SearchBar_OnUnfocused"
                            Text="{Binding SearchInput}"
                            BackgroundColor="White"
-                           Placeholder="Search user/workspace..." 
+                           Placeholder="Search user..." 
                            SearchCommandParameter="{Binding SearchInput}"
                            SearchCommand="{Binding SearchCommand}" >
                     <SearchBar.Behaviors>
                         <toolkit:EventToCommandBehavior
                             EventName="TextChanged"
+                            BindingContext="{Binding Path=BindingContext, Source={x:Reference This}, x:DataType=ContentPage}"
                             CommandParameter="{Binding SearchInput}"
-                            Command="{Binding SearchCommand}"
-                        />
+                            Command="{Binding SearchCommand}" />
                     </SearchBar.Behaviors>
                 </SearchBar>
             </StackLayout>
             <CollectionView Grid.Row="2" x:Name="SearchResults"
-                            SelectionChanged="SearchResults_OnSelectionChanged"
-                            Scrolled="SearchResults_OnScrolled"
+                            SelectionChangedCommand="{Binding SelectionChangedCommand}"
                             SelectedItem="{Binding SearchSelection}"
                             ItemsSource="{Binding SearchResults}"
                             SelectionMode="Single">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <StackLayout>
+                        <StackLayout Style="{StaticResource SelectionListStyle}">
                             <Label
                                 FontSize="22"
                                 Padding="5,5"

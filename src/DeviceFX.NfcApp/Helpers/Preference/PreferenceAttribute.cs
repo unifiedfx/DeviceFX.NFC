@@ -8,6 +8,7 @@ public abstract class PreferenceAttribute(string key) : Attribute
     public string Key { get; } = key;
     public abstract ValueTask LoadAsync(INotifyPropertyChanged instance, PropertyInfo property);
     public abstract ValueTask SaveAsync(INotifyPropertyChanged instance, PropertyInfo property);
+    public abstract ValueTask RemoveAsync(INotifyPropertyChanged instance, PropertyInfo property);
 }
 
 /// <summary>
@@ -39,10 +40,23 @@ public class PreferenceAttribute<T>(string key, T? defaultValue = default) : Pre
             case bool b:
                 Preferences.Default.Set(Key, b);
                 break;
+            case int b:
+                Preferences.Default.Set(Key, b);
+                break;
+            case long b:
+                Preferences.Default.Set(Key, b);
+                break;
             case DateTime t:
                 Preferences.Default.Set(Key, t);
                 break;
         }
+        return new ValueTask();
+    }
+    
+    public override ValueTask RemoveAsync(INotifyPropertyChanged instance, PropertyInfo property)
+    {
+        Preferences.Default.Remove(Key);
+        property.SetValue(instance, null);
         return new ValueTask();
     }
 }

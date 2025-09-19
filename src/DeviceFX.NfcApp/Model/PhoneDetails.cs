@@ -26,6 +26,14 @@ public partial class PhoneDetails : ObservableObject
     }
 
     [ObservableProperty]
+    public string? mode;
+    [ObservableProperty]
+    public string? activationCode;
+    [ObservableProperty]
+    public string? displayName;
+    [ObservableProperty]
+    public string? displayNumber;
+    [ObservableProperty]
     private string? wifiMac;
     [ObservableProperty]
     private string serial;
@@ -79,6 +87,13 @@ public partial class PhoneDetails : ObservableObject
         if(details.TryGetValue("WIFI MAC", out var wifiMac)) WifiMac = wifiMac;
     }
 
+    public void Update(Operation operation)
+    {
+        Mode = operation.Mode;
+        ActivationCode = operation.ActivationCode;
+        DisplayName = operation.DisplayName;
+        DisplayNumber = operation.DisplayNumber;
+    }
     public string UpdateTemplate(string template)
     {
         var placeholders = new Dictionary<string, string>()
@@ -165,5 +180,6 @@ public partial class PhoneDetails : ObservableObject
         }
     }
 
-    public override string ToString() => $"{Id} ({Pid})";
+    public override string ToString() => 
+        string.IsNullOrWhiteSpace(DisplayNumber)? $"{Mac},{Pid}" : $"{Mac},{Pid}({DisplayNumber})";
 }

@@ -3,22 +3,31 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
              x:Name="This"
              x:Class="DeviceFX.NfcApp.Views.Shared.ShellTitleView">
     <Grid VerticalOptions="Center" HeightRequest="44" ColumnDefinitions="44,*,44">
-        <Grid.Padding>
+        <Grid.Margin>
             <OnPlatform x:TypeArguments="Thickness">
                 <On Platform="Android" Value="16,0"/>
             </OnPlatform>
-        </Grid.Padding>
-        <ImageButton x:Name="SettingsButton"
-            Source="{Binding Settings.ImageSource}"
-            Command="{Binding OpenSettingsCommand}"
-            CornerRadius="22"
-            WidthRequest="32"
-            HeightRequest="32"
-            HorizontalOptions="End">
-        </ImageButton>
+        </Grid.Margin>
+        <Border
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 22,22,22,22"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            WidthRequest="40"
+            HeightRequest="40">
+            <ffimageloading:CachedImage Source="{Binding Settings.ImageSource}"
+                                        CacheType="All" 
+                                        LoadingPlaceholder="grey_settings_gear.png"
+                                        ErrorPlaceholder="grey_settings_gear.png"
+                                        HorizontalOptions="Center" />
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenSettingsCommand}"></TapGestureRecognizer>
+            </Border.GestureRecognizers>
+        </Border>
         <Label Grid.Column="1"
                TextColor="White"
                FontSize="Large"

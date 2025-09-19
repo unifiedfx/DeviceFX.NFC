@@ -1,17 +1,29 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using DeviceFX.NfcApp.Abstractions;
+using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
+using DeviceFX.NfcApp.Services;
 using DeviceFX.NfcApp.Views.Shared;
 using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class MainViewModel(AppViewModel appViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService) : WizardViewModelBase(steps)
+public partial class MainViewModel : WizardViewModelBase
 {
+    private readonly AppViewModel appViewModel;
+    private readonly SettingsViewModel settingsViewModel;
+    private readonly Operation operation;
+    private readonly ISearchService searchService;
+    private readonly IWebexService webexService;
+    private readonly IDeviceService deviceService;
+    private readonly IInventoryService inventoryService;
+    private readonly IPopupService popupService;
+
     public const string OnboardingCucm = "CUCM";
     public const string OnboardingCloud = "Cloud";
     public const string OnboardingActivation = "Activation";
@@ -19,11 +31,42 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     public const string SelectedOnboarding = "Onboarding";
     public const string SelectedInventory = "Inventory";
 
-    [ObservableProperty]
+    /// <inheritdoc/>
+    public MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IWebexService webexService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService, IMessenger messenger) : base(steps)
+    {
+        this.appViewModel = appViewModel;
+        this.settingsViewModel = settingsViewModel;
+        this.operation = operation;
+        this.searchService = searchService;
+        this.webexService = webexService;
+        this.deviceService = deviceService;
+        this.inventoryService = inventoryService;
+        this.popupService = popupService;
+        messenger.Register<OrganizationMessage>(this, async (recipient, message) =>
+        {
+            SearchResults.Clear();
+            SearchSelection = null;
+            SearchInput = String.Empty;
+            await this.RemoveAsync(nameof(SearchInput));
+        });
+    }
+
     [Preference<string>("selected-mode", SelectedProvision)]
     private string selectedMode = SelectedProvision;
+    
+    public string SelectedMode
+    {
+        get => selectedMode;
+        set
+        {
+            Settings.User.MustLogin = value == SelectedProvision && !Settings.User.IsLoggedIn;
+            if (selectedMode == value) return;
+            SetProperty(ref selectedMode, value);
+        }
+    }
 
     public Operation Operation => operation;
+    public Settings Settings => settingsViewModel.Settings;
 
     #region Onboarding
 
@@ -44,17 +87,21 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
         switch (OnboardingMode)
         {
             case OnboardingCucm:
-                operation.Onboarding.Add("onboardingMethod","4");
+                Operation.Onboarding.Add("onboardingMethod","4");
+                Operation.Merge = true;
                 break;
             case OnboardingCloud:
-                operation.Onboarding.Add("onboardingMethod","2");
+                Operation.Onboarding.Add("onboardingMethod","2");
+                Operation.Merge = true;
                 break;
             case OnboardingActivation:
-                operation.Onboarding.Add("onboardingMethod","3");
-                operation.Onboarding.Add("onboardingDetail",ActivationCode);
+                Operation.Onboarding.Add("onboardingMethod","3");
+                Operation.Onboarding.Add("onboardingDetail",ActivationCode);
+                Operation.ActivationCode = ActivationCode;
                 break;
         }
-        await deviceService.ScanPhoneAsync(operation);
+        Operation.Mode = $"Onboarding:{OnboardingMode}";
+        await deviceService.ScanPhoneAsync(Operation);
     }
     public bool CanExecuteOnboarding() => OnboardingMode != OnboardingActivation || !string.IsNullOrEmpty(ActivationCode);
 
@@ -70,8 +117,13 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SelectedCommand))]
-    [Preference<string>("search-selected")]
+    [NotifyCanExecuteChangedFor(nameof(ProvisionCommand))]
     private SearchResult? searchSelection;
+    
+    partial void OnSearchSelectionChanged(SearchResult? value)
+    {
+        ProvisionActivationCode = null;
+    }
     
     [ObservableProperty]
     private ObservableCollection<SearchResult> searchResults = [];
@@ -85,13 +137,30 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
         _ = Search();
         async Task Search()
         {
-            var results = await searchService.SearchAsync(query, searchCts.Token);
+            var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, searchCts.Token);
             if (string.IsNullOrEmpty(query) || !results.Any()) 
                 SearchResults.Clear();
             else
                 SearchResults = new ObservableCollection<SearchResult>(results.Order());
             SearchSelection = null;
         }
+    }
+
+    [RelayCommand]
+    public async Task SelectionChangedAsync()
+    {
+        if(SearchSelection == null) return;
+        if (SearchSelection.Checked)
+        {
+            if (SearchSelection.Issue != null) SearchSelection = null;
+            return;
+        }
+        await webexService.UpdateOrganization(Settings.User, Settings.User.Organization.Id);
+        await searchService.CheckResult(SearchSelection, Settings.User.Organization?.Id, Settings.User?.Organization?.LicenseIds);
+        if(SearchSelection.Issue == null || !SearchSelection.Checked) return;
+        var issue = SearchSelection.Issue;
+        SearchSelection = null;
+        await Shell.Current.DisplayAlert("Unable to use", $"{issue}", "Ok");
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
@@ -106,7 +175,35 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
 
     #region Provision
 
-    [RelayCommand]
+    [Preference<bool>("provision-activation")]
+    [ObservableProperty]
+    private bool isModelSelected;
+
+    [Preference<string>("provision-model", "DP-9841")]
+    [ObservableProperty]
+    private string provisionModel = "DP-9841";
+
+    [ObservableProperty]
+    private string? provisionActivationCode;
+    [ObservableProperty]
+    private string? provisionResultActivationCode;
+
+    public bool IsCodeVisible => IsModelSelected && ProvisionActivationCode != null;
+
+    partial void OnIsModelSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCodeVisible));
+    }
+    partial void OnProvisionActivationCodeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsCodeVisible));
+    }
+    
+    [ObservableProperty]
+    private List<string> models = new(["DP-9841", "DP-9851", "DP-9861", "DP-9871"]);
+    
+    
+    [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task ProvisionAsync()
     {
         // Start NFC Read then provision to Webex
@@ -119,22 +216,103 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
         }
         Operation.Reset();
         appViewModel.Title = "Provisioning";
-        operation.State = OperationState.InProgress;
-        operation.Callback = AsyncCallback;
-        await deviceService.ScanPhoneAsync(operation);
-        if (operation.State == OperationState.Success)
+        Operation.State = OperationState.InProgress;
+        ProvisionResultActivationCode = null;
+        if (IsModelSelected)
         {
-            appViewModel.Title = "Provisioned";
+            WebexService.ActivationResult result = new WebexService.ActivationResult(ProvisionActivationCode);
+            Operation.Mode = "Provision:ActivationCode";
+            Operation.DisplayName = SearchSelection?.Name;
+            Operation.DisplayNumber = SearchSelection?.Number;
+            if (string.IsNullOrEmpty(ProvisionActivationCode))
+            {
+                result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+            }
+            if (!string.IsNullOrEmpty(result.Error))
+            {
+                Operation.Result = result.Error;
+                Operation.State = OperationState.Failure;
+                appViewModel.Title = "Provision";
+            }
+            else
+            {
+                ProvisionActivationCode = result.Code;
+                Operation.ActivationCode = ProvisionActivationCode;
+                Operation.Onboarding.Clear();
+                Operation.Onboarding.Add("onboardingMethod","3");
+                Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                var incorrectModel = false;
+                Operation.Callback = o =>
+                {
+                    if (o.Phone?.Pid != null && !string.Equals(o.Phone.Pid, ProvisionModel,
+                            StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        incorrectModel = true;
+                        o.State = OperationState.Failure;
+                        o.Result = $"Incorrect Model, expecting: {ProvisionModel}";
+                    }
+                    return new(new List<NdefRecord>());
+                };
+                await deviceService.ScanPhoneAsync(Operation);
+                if (incorrectModel)
+                {
+                    if (await Application.Current?.MainPage?.DisplayAlert("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
+                    {
+                        ProvisionModel = Operation.Phone.Pid;
+                        Operation.Reset();
+                        Operation.State = OperationState.InProgress;
+                        Operation.Mode = "Provision:ActivationCode";
+                        Operation.DisplayName = SearchSelection?.Name;
+                        Operation.DisplayNumber = SearchSelection?.Number;
+                        result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+                        if (!string.IsNullOrEmpty(result.Code))
+                        {
+                            ProvisionActivationCode = result.Code;
+                            Operation.ActivationCode = ProvisionActivationCode;
+                            Operation.Onboarding.Add("onboardingMethod","3");
+                            Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                            await deviceService.ScanPhoneAsync(Operation);
+                        }
+                        else
+                        {
+                            Operation.State = OperationState.Failure;
+                            Operation.Result = result.Error;
+                        }
+                    }
+                }
+                if(Operation.State == OperationState.Success)
+                {
+                    appViewModel.Title = "Provisioned";
+                    ProvisionResultActivationCode = ProvisionActivationCode;
+                    ProvisionActivationCode = null;
+                }
+                else
+                {
+                    appViewModel.Title = "Provision";
+                }
+            }
         }
         else
         {
-            appViewModel.Title = "Provision";
-        }
-
-        async ValueTask<List<NdefRecord>> AsyncCallback(Operation op)
-        {
-            await Task.Delay(1000);
-            return [];
+            Operation.Mode = "Provision:MacAddress";
+            Operation.DisplayName = SearchSelection?.Name;
+            Operation.DisplayNumber = SearchSelection?.Number;
+            await deviceService.ScanPhoneAsync(Operation);
+            if (Operation.State == OperationState.Success)
+            {
+                var result = await webexService.AddDeviceByMac(orgId: Settings.User.Organization.Id, mac: Operation.Phone.Mac, model:Operation.Phone.Pid, personId: SearchSelection.Id);
+                if (result != null)
+                {
+                    Operation.Result = result;
+                    Operation.State = OperationState.Failure;
+                    appViewModel.Title = "Provision";
+                }
+                else appViewModel.Title = "Provisioned";
+            }
+            else
+            {
+                appViewModel.Title = "Provision";
+            }
         }
     }
 
@@ -156,7 +334,7 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
 
     [ObservableProperty]
     private PhoneDetails? selectedPhone;
-
+    
     public async Task LoadPhonesAsync()
     {
         PhoneList = new ObservableCollection<PhoneDetails>(await inventoryService.GetPhonesAsync());
@@ -168,7 +346,20 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
         try
         {
             Operation.Reset();
+            Operation.Mode = "Inventory";
+            Operation.Merge = true;
+            if (long.TryParse(Settings.AutoNumber, out var autoNumber))
+            {
+                Operation.DisplayNumber = autoNumber.ToString();
+                Operation.Merge = false;
+            }
+            else autoNumber = -1;
             await deviceService.ScanPhoneAsync(operation);
+            if (operation.State == OperationState.Success && autoNumber++ > 0)
+            {
+                Settings.AutoNumber = autoNumber.ToString();
+                await Settings.SaveAsync(nameof(Settings.AutoNumber));
+            }
             await LoadPhonesAsync();
         }
         catch (Exception e)
@@ -206,7 +397,36 @@ public partial class MainViewModel(AppViewModel appViewModel, Operation operatio
     public async Task PhoneClickedAsync(PhoneDetails phone)
     {
         SelectedPhone = phone;
-        if(SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>();
+        if (SelectedPhone != null) await popupService.ShowPopupAsync<MainViewModel>(Shell.Current);
+    }
+    #endregion
+
+    #region Start
+
+    [RelayCommand]
+    public async Task LoginAsync(string? page = null)
+    {
+        try
+        {
+            SearchInput = String.Empty;
+            await this.RemoveAsync("SearchInput");
+            await settingsViewModel.LoginCommand.ExecuteAsync(null);
+        }
+        catch (OperationCanceledException e)
+        {
+            return;
+        }
+        if(Settings.User.IsLoggedIn) await NextAsync(page);
+    }
+    [RelayCommand]
+    public async Task StartAsync(string? page = null)
+    {
+        if (!SearchResults.Any() && !string.IsNullOrEmpty(SearchInput))
+        {
+            SearchInput = String.Empty;
+            await this.RemoveAsync("SearchInput");
+        }
+        await NextAsync(page);
     }
     #endregion
 }

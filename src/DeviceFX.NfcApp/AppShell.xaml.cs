@@ -1,4 +1,6 @@
-﻿using DeviceFX.NfcApp.ViewModels;
+﻿using System.ComponentModel;
+using DeviceFX.NfcApp.Helpers;
+using DeviceFX.NfcApp.ViewModels;
 using DeviceFX.NfcApp.Views;
 using DeviceFX.NfcApp.Views.Shared;
 
@@ -50,6 +52,14 @@ public partial class AppShell : Shell
         base.OnNavigated(args);
         var appViewModel = serviceProvider.GetService<AppViewModel>();
         appViewModel.Title =Current?.CurrentItem.CurrentItem.CurrentItem.Title ?? Current?.CurrentPage.Title;
+        if (Current?.CurrentPage is Page {BindingContext: INotifyPropertyChanged viewModel})
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await viewModel.LoadAsync();
+                viewModel.ApplyQuery(ParseQueryString(args.Current.Location.OriginalString));
+            });
+        }
     }
 
     protected override void OnNavigating(ShellNavigatingEventArgs args)
@@ -63,7 +73,10 @@ public partial class AppShell : Shell
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             if(Navigation.ModalStack.LastOrDefault() != page) await Navigation.PushModalAsync(page, true);
-            if(page.BindingContext is IQueryAttributable qt) qt.ApplyQueryAttributes(ParseQueryString(args.Target.Location.OriginalString));
+            if (page.BindingContext is IQueryAttributable qt)
+            {
+                qt.ApplyQueryAttributes(ParseQueryString(args.Target.Location.OriginalString));
+            }
         });
     }
 

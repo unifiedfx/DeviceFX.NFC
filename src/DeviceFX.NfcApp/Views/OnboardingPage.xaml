@@ -50,7 +50,7 @@
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference ActivationRadioButton}}">
                 <Label StyleClass="Heading">Write Activation Code</Label>
                 <Label StyleClass="Subheading">Set the phone to directly register using the entered Activation Code</Label>
-                <Entry Text="{Binding ActivationCode}" Placeholder="Activation Code"></Entry>
+                <Entry Text="{Binding ActivationCode}" Placeholder="Activation Code" Keyboard="Numeric"></Entry>
             </StackLayout>
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference CUCMRadioButton}}">
                 <Label StyleClass="Heading" FontAttributes="Bold">CUCM Priority</Label>

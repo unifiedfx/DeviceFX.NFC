@@ -1,5 +1,4 @@
 using DeviceFX.NfcApp.ViewModels;
-using DeviceFX.NfcApp.Helpers;
 
 namespace DeviceFX.NfcApp.Views;
 
@@ -16,6 +15,6 @@ public partial class SettingsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await settingsViewModel.Settings.LoadAsync();
+        await settingsViewModel.ReadAsync();
     }
 }

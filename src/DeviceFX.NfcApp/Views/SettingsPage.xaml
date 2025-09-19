@@ -3,9 +3,16 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              Title="Settings"
              HideSoftInputOnTapped="True"
+             x:Name="This"
              x:Class="DeviceFX.NfcApp.Views.SettingsPage">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <ContentPage.Content>
         <Grid RowDefinitions="Auto, Auto, *, 50" Padding="20,20" RowSpacing="10">
             <Label Text="Settings" FontSize="28" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center" Padding="0,0"/>
@@ -14,7 +21,43 @@
                     <Label Text="Asset Tag:" FontSize="18" VerticalOptions="Center" Padding="0,10,0,0"/>
                     <Entry Text="{Binding Settings.AssetTag}" Placeholder="Asset Tag"></Entry>
                 </StackLayout>
+                <StackLayout>
+                    <Label Text="Auto Number:" FontSize="18" VerticalOptions="Center" Padding="0,10,0,0"/>
+                    <Entry IsSpellCheckEnabled="False" ClearButtonVisibility="WhileEditing" Keyboard="Numeric" Text="{Binding Settings.AutoNumber}" Placeholder="Auto-incrementing Number"></Entry>
+                </StackLayout>
                 <shared:LabelCheckboxView LabelText="Save Location" IsToggled="{Binding Settings.IncludeLocation}" Command="{Binding LocationChangedCommand}"></shared:LabelCheckboxView>
+                <shared:LabelCheckboxView LabelText="Enable Debugging" IsToggled="{Binding Settings.EnableDebug}"></shared:LabelCheckboxView>
+            </StackLayout>
+            <StackLayout Grid.Row="2" IsVisible="{Binding Settings.User.IsLoggedIn}" Spacing="20">
+                <Image Source="{Binding Settings.User.Picture}"
+                       WidthRequest="80"
+                       HeightRequest="80"
+                       HorizontalOptions="Center">
+                    <Image.Clip>
+                        <EllipseGeometry
+                            Center="40,40"
+                            RadiusX="40"
+                            RadiusY="40"/>
+                    </Image.Clip>
+                </Image>
+                <Label Text="{Binding Settings.User.DisplayName}"
+                       FontSize="Large"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center"
+                       TextColor="{DynamicResource Primary}" />
+                <Picker Title="Select Organization" ItemsSource="{Binding Settings.User.Organizations}" SelectedItem="{Binding Settings.User.Organization, Mode=TwoWay}">
+                    <Picker.Behaviors>
+                        <toolkit:EventToCommandBehavior
+                            EventName="SelectedIndexChanged"
+                            BindingContext="{Binding Path=BindingContext, Source={x:Reference This}, x:DataType=ContentPage}"
+                            Command="{Binding OrganizationChangedCommand}" />
+                    </Picker.Behaviors>
+                </Picker>
+                <Button Text="Logout" Command="{Binding LogoutCommand}" WidthRequest="120"></Button>
+            </StackLayout>
+            <StackLayout Grid.Row="2" IsVisible="{Binding Settings.User.IsLoggedIn, Converter={StaticResource InvertedBoolConverter}}">
+                <Button Text="Login" Command="{Binding LoginCommand}" WidthRequest="120"></Button>
             </StackLayout>
             <shared:NavigationButtonsView Grid.Row="3" BackButtonText="Cancel" BackCommand="{Binding CancelCommand}" NextButtonText="OK" NextCommand="{Binding CloseCommand}"/>
         </Grid>

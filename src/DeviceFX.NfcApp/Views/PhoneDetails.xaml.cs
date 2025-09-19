@@ -11,8 +11,8 @@ public partial class PhoneDetailsPopup : Popup
         BindingContext = viewModel;
     }
     
-    private void OnCloseClicked(object sender, EventArgs e)
+    private async void OnCloseClicked(object sender, EventArgs e)
     {
-        Close();
+        await CloseAsync();
     }
 }
