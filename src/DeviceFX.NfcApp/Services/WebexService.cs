@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class WebexService(Settings settings, TelemetryClient telemetryClient, ILogger<WebexService> logger) : IWebexService, ISearchService
+public class WebexService(Settings settings, ILogger<WebexService> logger, TelemetryClient? telemetryClient = null) : IWebexService, ISearchService
 {
     public Func<Task<bool>>? RetryLogin { get; set; }
 
@@ -100,10 +100,14 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
             result =  content.GetProperty("errors")[0].GetProperty("description").GetString();
             logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", result, trackingId);
         }
-        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "WebexAddDeviceByMac",
-            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices?orgId={orgId}", success: response.IsSuccessStatusCode,
-            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
-        await telemetryClient.FlushAsync(CancellationToken.None);
+
+        if (telemetryClient != null)
+        {
+            telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "WebexAddDeviceByMac",
+                target: httpClient.BaseAddress?.ToString(), data: $"v1/devices?orgId={orgId}", success: response.IsSuccessStatusCode,
+                startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
+            await telemetryClient.FlushAsync(CancellationToken.None);
+        }
         return result;
     }
 
@@ -135,10 +139,13 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
             return new ActivationResult(Error: response.ReasonPhrase);
         }
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "AddDeviceByActivationCode",
-            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices/activationCode?orgId={orgId}", success: response.IsSuccessStatusCode,
-            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
-        await telemetryClient.FlushAsync(CancellationToken.None);
+        if (telemetryClient != null)
+        {
+            telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "AddDeviceByActivationCode",
+                target: httpClient.BaseAddress?.ToString(), data: $"v1/devices/activationCode?orgId={orgId}", success: response.IsSuccessStatusCode,
+                startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
+            await telemetryClient.FlushAsync(CancellationToken.None);
+        }
         var code = content.GetProperty("code").GetString();
         var expiry = content.GetProperty("expiryTime").GetDateTime();
         return new ActivationResult(code, expiry);
