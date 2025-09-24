@@ -4,20 +4,30 @@
                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                         xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                         xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                        xmlns:converters="clr-namespace:DeviceFX.NfcApp.Helpers.Converters"
                         Priority="20"
                         Group="Provision"
                         Title="Search"
                         HideSoftInputOnTapped="True"
                         x:Name="This"
                         x:Class="DeviceFX.NfcApp.Views.SearchPage">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary x:Key="SelectionImageMapper">
+                <x:String x:Key="User">customer.png</x:String>
+                <x:String x:Key="Workspace">workspace.png</x:String>
+            </ResourceDictionary>            
+            <converters:StringMapperConverter x:Key="SelectionImageConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <ContentPage.Content>
         <Grid Padding="15" RowDefinitions="Auto, Auto, *, 50">
-            <Label Text="User to assign" FontSize="20" VerticalOptions="Center"/>
+            <Label Text="User/Workspace to assign" FontSize="20" VerticalOptions="Center"/>
             <StackLayout Grid.Row="1">
                 <SearchBar x:Name="searchBar"
                            Text="{Binding SearchInput}"
                            BackgroundColor="White"
-                           Placeholder="Search user..." 
+                           Placeholder="Search name/extension" 
                            SearchCommandParameter="{Binding SearchInput}"
                            SearchCommand="{Binding SearchCommand}" >
                     <SearchBar.Behaviors>
@@ -36,7 +46,8 @@
                             SelectionMode="Single">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <StackLayout Style="{StaticResource SelectionListStyle}">
+                        <StackLayout Style="{StaticResource SelectionListStyle}" Orientation="Horizontal">
+                            <Image Source="{Binding Type, Converter={StaticResource SelectionImageConverter}, ConverterParameter={StaticResource SelectionImageMapper}}" HeightRequest="32"></Image>
                             <Label
                                 FontSize="22"
                                 Padding="5,5"

@@ -105,7 +105,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IMessenger, WeakReferenceMessenger>();
         builder.Services.AddSingleton<WizardViewModelBase>(provider => provider.GetRequiredService<MainViewModel>());
         var applicationInsights = configuration.GetConnectionString("ApplicationInsights");
-        if (!string.IsNullOrWhiteSpace(applicationInsights) || applicationInsights.Contains("__"))
+        if (!string.IsNullOrWhiteSpace(applicationInsights) && !applicationInsights.Contains("__"))
         {
             var installationId = Preferences.Get("installationId", String.Empty);
             if (string.IsNullOrEmpty(installationId))

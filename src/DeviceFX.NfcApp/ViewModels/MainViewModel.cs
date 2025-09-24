@@ -300,7 +300,11 @@ public partial class MainViewModel : WizardViewModelBase
             await deviceService.ScanPhoneAsync(Operation);
             if (Operation.State == OperationState.Success)
             {
-                var result = await webexService.AddDeviceByMac(orgId: Settings.User.Organization.Id, mac: Operation.Phone.Mac, model:Operation.Phone.Pid, personId: SearchSelection.Id);
+                var result = await webexService.AddDeviceByMac(orgId: Settings.User.Organization.Id,
+                    mac: Operation.Phone.Mac,
+                    model: Operation.Phone.Pid,
+                    personId: SearchSelection?.Type == "User" ? SearchSelection.Id : null,
+                    workspaceId: SearchSelection?.Type == "Workspace" ? SearchSelection.Id : null);
                 if (result != null)
                 {
                     Operation.Result = result;

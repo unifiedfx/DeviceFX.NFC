@@ -7,7 +7,7 @@ using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class DeviceService(IServiceProvider provider, IInventoryService inventoryService, ILocationService locationService, Settings settings, TelemetryClient telemetryClient, ILogger<DeviceService> logger) : IDeviceService
+public class DeviceService(IServiceProvider provider, IInventoryService inventoryService, ILocationService locationService, Settings settings, ILogger<DeviceService> logger, TelemetryClient? telemetryClient = null) : IDeviceService
 {
     public async Task ScanPhoneAsync(Operation operation)
     {
@@ -179,14 +179,17 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             }
             operation.Result = message;
             operation.State = result ? OperationState.Success : OperationState.Failure;
-            telemetryClient.TrackEvent(operation.Mode, new Dictionary<string, string?>
+            if (telemetryClient != null)
             {
-                {"Result", result ? "Success" : "Failure"},
-                {"Message", message},
-                {"Model", operation.Phone?.Pid},
-                {"Version", operation.Phone?.NfcVersion}
-            });
-            await telemetryClient.FlushAsync(cancellationToken);
+                telemetryClient.TrackEvent(operation.Mode, new Dictionary<string, string?>
+                {
+                    {"Result", result ? "Success" : "Failure"},
+                    {"Message", message},
+                    {"Model", operation.Phone?.Pid},
+                    {"Version", operation.Phone?.NfcVersion}
+                });
+                await telemetryClient.FlushAsync(cancellationToken);
+            }
             tcs.TrySetResult();
             return message;
         }

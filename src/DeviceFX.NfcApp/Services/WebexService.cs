@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class WebexService(Settings settings, TelemetryClient telemetryClient, ILogger<WebexService> logger) : IWebexService, ISearchService
+public class WebexService(Settings settings, ILogger<WebexService> logger, TelemetryClient? telemetryClient = null) : IWebexService, ISearchService
 {
     public Func<Task<bool>>? RetryLogin { get; set; }
 
@@ -100,10 +100,14 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
             result =  content.GetProperty("errors")[0].GetProperty("description").GetString();
             logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", result, trackingId);
         }
-        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "WebexAddDeviceByMac",
-            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices?orgId={orgId}", success: response.IsSuccessStatusCode,
-            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
-        await telemetryClient.FlushAsync(CancellationToken.None);
+
+        if (telemetryClient != null)
+        {
+            telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "WebexAddDeviceByMac",
+                target: httpClient.BaseAddress?.ToString(), data: $"v1/devices?orgId={orgId}", success: response.IsSuccessStatusCode,
+                startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
+            await telemetryClient.FlushAsync(CancellationToken.None);
+        }
         return result;
     }
 
@@ -135,10 +139,13 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
             return new ActivationResult(Error: response.ReasonPhrase);
         }
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-        telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "AddDeviceByActivationCode",
-            target: httpClient.BaseAddress?.ToString(), data: $"v1/devices/activationCode?orgId={orgId}", success: response.IsSuccessStatusCode,
-            startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
-        await telemetryClient.FlushAsync(CancellationToken.None);
+        if (telemetryClient != null)
+        {
+            telemetryClient.TrackDependency(dependencyTypeName: "HTTP", dependencyName: "AddDeviceByActivationCode",
+                target: httpClient.BaseAddress?.ToString(), data: $"v1/devices/activationCode?orgId={orgId}", success: response.IsSuccessStatusCode,
+                startTime: startTime, duration: duration, resultCode: response.StatusCode.ToString());
+            await telemetryClient.FlushAsync(CancellationToken.None);
+        }
         var code = content.GetProperty("code").GetString();
         var expiry = content.GetProperty("expiryTime").GetDateTime();
         return new ActivationResult(code, expiry);
@@ -163,20 +170,33 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
 
     public async Task<List<SearchResult>> SearchAsync(string query, string orgId, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(query)) return [];
         var httpClient = await GetHttpClient(true);
         if (httpClient == null) return new();
-        var filter = $"(active eq true) and (displayName sw \"{query}\" or userName sw \"{query}\" or name.givenName sw \"{query}\" or name.familyName sw \"{query}\")";
-        var encoded = WebUtility.UrlEncode(filter);
-        var guid = WebexIDTypes.Organization.ConvertToGuid(orgId);
-        var users = await httpClient.GetFromJsonAsync<WebexIdentityUsersDto>($"identity/scim/{guid}/v2/Users?filter={encoded}", cancellationToken: cancellationToken);
-        return users?.Resources.Where(r => r.phoneNumbers?.Length > 0).Select(r => new SearchResult
+        var path = $"v1/telephony/config/numbers?orgId={orgId}";
+        var encodedQuery = WebUtility.UrlEncode(query);
+        if (long.TryParse(query, out var number))
+            path += $"&extension={encodedQuery}&numberType=EXTENSION";
+        else
+            path += $"&ownerName={encodedQuery}&numberType=EXTENSION";
+        var types = new Dictionary<string, string> {{"PEOPLE", "User"},{"PLACE", "Workspace"}};
+        WebexPhoneNumbersDto? numbers = null;
+        try
         {
-            Id = WebexIDTypes.People.ConvertToBase64Id(r.id),
-            Type = "User",
-            Name = r.displayName,
-            Number = r.phoneNumbers?.Where(n => n.primary)
-                .Select(n => n.value).FirstOrDefault()
-        }).ToList() ?? new();
+            numbers = await httpClient.GetFromJsonAsync<WebexPhoneNumbersDto>(path, cancellationToken: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "SearchAsync");
+            return [];
+        }
+        return numbers?.phoneNumbers.Where(n=> types.ContainsKey(n.owner.type)).Select(n => new SearchResult
+        {
+            Id = n.owner.id,
+            Type = types[n.owner.type],
+            Name = n.owner.type == "PEOPLE" ? $"{n.owner.firstName} {n.owner.lastName}" : n.owner.firstName,
+            Number = n.extension
+        }).ToList() ?? [];
     }
 
     public async Task CheckResult(SearchResult result, string orgId, List<string> LicenseIds)
@@ -188,26 +208,70 @@ public class WebexService(Settings settings, TelemetryClient telemetryClient, IL
             result.Issue = "Unable to validate";
             return;
         }
-        var person =  await httpClient.GetFromJsonAsync<WebexPersonDto>($"v1/people/{result.Id}?orgId={orgId}&callingData=true");
-        if (person == null)
-        {
-            result.Issue = "Unable to validate";
-            return;
-        }
-        result.Picture = person.avatar;
-        if(person.licenses?.Length == 0)
-        {
-            result.Checked = true;
-            result.Issue = "No license";
-            return;
-        }
-        var license = LicenseIds.FirstOrDefault(l => person.licenses.Contains(l));
-        if(license == null)
-        {
-            result.Checked = true;
-            result.Issue = "No calling license";
-            return;
-        }
+        if (result.Type == "User") await CheckPerson();
+        else await CheckWorkspace();
         result.Checked = true;
+
+        async Task CheckPerson()
+        {
+            WebexPersonDto? person = null;
+            try
+            {
+                person = await httpClient.GetFromJsonAsync<WebexPersonDto>($"v1/people/{result.Id}?orgId={orgId}&callingData=true");
+            }
+            catch (Exception e)
+            {
+                result.Issue = e.Message;
+                logger.LogError(e, "CheckResult");
+            }
+            if (person == null)
+            {
+                result.Issue = "Unable to validate";
+                return;
+            }
+            result.Picture = person.avatar;
+            if(person.licenses?.Length == 0)
+            {
+                result.Checked = true;
+                result.Issue = "No license";
+                return;
+            }
+            var license = LicenseIds.FirstOrDefault(l => person.licenses.Contains(l));
+            if(license == null)
+            {
+                result.Checked = true;
+                result.Issue = "No calling license";
+            }
+        }
+        async Task CheckWorkspace()
+        {
+            WebexWorkspaceDto? workspace = null;
+            try
+            {
+                workspace = await httpClient.GetFromJsonAsync<WebexWorkspaceDto>($"v1/workspaces/{result.Id}?orgId={orgId}&includeDevices=true");
+            }
+            catch (Exception e)
+            {
+                result.Issue = e.Message;
+                logger.LogError(e, "CheckResult");
+            }
+            if (workspace == null)
+            {
+                result.Issue = "Unable to validate";
+                return;
+            }
+            if(workspace.calling.webexCalling.licenses.Length == 0)
+            {
+                result.Checked = true;
+                result.Issue = "No license";
+                return;
+            }
+            var license = LicenseIds.FirstOrDefault(l => workspace.calling.webexCalling.licenses.Contains(l));
+            if(license == null)
+            {
+                result.Checked = true;
+                result.Issue = "No calling license";
+            }
+        }
     }
 }
