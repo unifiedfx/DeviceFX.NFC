@@ -9,6 +9,7 @@ public partial class App : Application
     public App(IServiceProvider serviceProvider)
     {
         this.serviceProvider = serviceProvider;
+        UserAppTheme = AppTheme.Light;
         InitializeComponent();
     }
 
