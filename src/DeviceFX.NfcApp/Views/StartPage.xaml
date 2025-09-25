@@ -19,7 +19,7 @@
     </ContentPage.Resources>
     <ContentPage.Content>
         <Grid Padding="15"
-              RowDefinitions="Auto, *, 50, 50"
+              RowDefinitions="Auto, *, Auto, 50, 30, 50"
               RowSpacing="0">
             <StackLayout
                 Spacing="10"
@@ -63,8 +63,18 @@
                 <Label StyleClass="Heading">Export phone details</Label>
                 <Label StyleClass="Subheading">Manage the list of scanned phones including exporting to a CSV file that can then be used to add to any system such as CUCM via BAT Template</Label>
             </StackLayout>
-            <Button Grid.Row="3" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding LoginCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
-            <Button Grid.Row="3" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Grid Grid.Row="3">
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                    <Label VerticalTextAlignment="Center" HorizontalTextAlignment="End" StyleClass="Heading" FontSize="24">Courtesy of:</Label>
+                    <Image Source="unifiedfx_logo.png" HorizontalOptions="Start" WidthRequest="150">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenUrlCommand}" CommandParameter="https://unifiedfx.com"></TapGestureRecognizer>
+                        </Image.GestureRecognizers>
+                    </Image>                    
+                </HorizontalStackLayout>
+            </Grid>
+            <Button Grid.Row="5" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding LoginCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="5" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
         </Grid>
     </ContentPage.Content>
 </shared:StepContentPage>
