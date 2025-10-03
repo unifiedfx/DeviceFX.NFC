@@ -14,7 +14,7 @@
         </ResourceDictionary>
         <Style TargetType="RadioButton">
             <Setter Property="ControlTemplate"
-                    Value="{StaticResource ToggleRadioButtonTemplate}" />
+                    Value="{StaticResource PrimaryToggleRadioButtonTemplate}" />
         </Style>
     </ContentPage.Resources>
     <ContentPage.Content>

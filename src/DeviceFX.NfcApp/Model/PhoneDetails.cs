@@ -150,9 +150,13 @@ public partial class PhoneDetails : ObservableObject
     {
         var dict = new Dictionary<string,string>(config, StringComparer.OrdinalIgnoreCase);
         if(dict.Count == 0) return null;
-        var onboardingMethod = int.TryParse(dict["onboardingMethod"], out var method)
-            ? method
-            : 2;
+        var onboardingMethod = 0;
+        if (dict.TryGetValue("onboardingMethod", out var onboardingMethodValue))
+        {
+            onboardingMethod = int.TryParse(onboardingMethodValue, out var method)
+                ? method
+                : 2;            
+        }
         dict.TryGetValue("onboardingDetail", out var onboardingDetail);
         if(onboardingMethod is 1 or 3 or 5 && onboardingDetail is null) throw new ArgumentOutOfRangeException(nameof(config), $"Onboarding method {onboardingMethod} requires onboardingDetail.");
         return json ? GetJsonConfig() : GetTextConfig();
@@ -166,12 +170,11 @@ public partial class PhoneDetails : ObservableObject
         }
         string GetJsonConfig()
         {
-            
             var json = new Dictionary<string, object>
             {
-                { "onboardingMethod", onboardingMethod },
                 { "mac", Mac.ToUpperInvariant() }
             };
+            if (onboardingMethod > 0) json.Add("onboardingMethod", onboardingMethod);
             if (onboardingDetail is not null) json.Add("onboardingDetail", onboardingDetail);
             dict.Remove("onboardingMethod");
             dict.Remove("onboardingDetail");

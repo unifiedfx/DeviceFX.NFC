@@ -61,8 +61,9 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.100" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />
-        <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-        <PackageReference Include="UFX.DeviceFX.NFC" Version="1.0.13" />
+        <PackageReference Include="SourceGear.sqlite3" Version="3.50.4.2" />
+        <PackageReference Include="sqlite-net-e" Version="1.10.0-beta2" />
+        <PackageReference Include="UFX.DeviceFX.NFC" Version="1.0.14" />
     </ItemGroup>
 
     <ItemGroup>

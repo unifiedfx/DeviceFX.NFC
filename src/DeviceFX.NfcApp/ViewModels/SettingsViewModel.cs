@@ -4,10 +4,11 @@ using CommunityToolkit.Mvvm.Messaging;
 using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Model;
 using DeviceFX.NfcApp.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger) : ObservableValidator, IQueryAttributable
+public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger, ILogger<SettingsViewModel> logger) : ObservableValidator, IQueryAttributable
 {
     private bool firstLoad = true;
     [ObservableProperty]
@@ -92,7 +93,14 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         await Settings.LoadAsync();
         if (firstLoad)
         {
-            await GetUserAsync();
+            try
+            {
+                await GetUserAsync();
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "ReadAsync");
+            }
             firstLoad = false;
         }
     }

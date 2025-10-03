@@ -14,11 +14,11 @@ public class WebexIdentityUserDto
     public string userType { get; set; }
     public string externalId { get; set; }
     public PhoneNumbers[] phoneNumbers { get; set; }
-    public Photos[] photos { get; set; }
+    public Photos[]? photos { get; set; }
     [JsonPropertyName("urn:scim:schemas:extension:cisco:webexidentity:2.0:User")]
     public Webex webex { get; set; }
     public Meta meta { get; set; }
-    public string? Picture => photos.OrderByDescending(p => p.type == "photo").Select(p => p.value).FirstOrDefault();
+    public string? Picture => photos?.OrderByDescending(p => p.type == "photo").Select(p => p.value).FirstOrDefault();
     public class Name
     {
         public string familyName { get; set; }

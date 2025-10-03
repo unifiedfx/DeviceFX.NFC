@@ -176,26 +176,30 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         var path = $"v1/telephony/config/numbers?orgId={orgId}";
         var encodedQuery = WebUtility.UrlEncode(query);
         if (long.TryParse(query, out var number))
-            path += $"&extension={encodedQuery}&numberType=EXTENSION";
-        else
-            path += $"&ownerName={encodedQuery}&numberType=EXTENSION";
+            path += $"&extension={encodedQuery}&phoneNumber={encodedQuery}";
+        path += $"&ownerName={encodedQuery}";
         var types = new Dictionary<string, string> {{"PEOPLE", "User"},{"PLACE", "Workspace"}};
         WebexPhoneNumbersDto? numbers = null;
         try
         {
             numbers = await httpClient.GetFromJsonAsync<WebexPhoneNumbersDto>(path, cancellationToken: cancellationToken);
         }
+        catch (TaskCanceledException e)
+        {
+            logger.LogTrace(e, "SearchAsync");
+            return [];
+        }
         catch (Exception e)
         {
             logger.LogError(e, "SearchAsync");
             return [];
         }
-        return numbers?.phoneNumbers.Where(n=> types.ContainsKey(n.owner.type)).Select(n => new SearchResult
+        return numbers?.phoneNumbers.Where(n=> n.owner != null && types.ContainsKey(n.owner?.type!)).Select(n => new SearchResult
         {
-            Id = n.owner.id,
-            Type = types[n.owner.type],
-            Name = n.owner.type == "PEOPLE" ? $"{n.owner.firstName} {n.owner.lastName}" : n.owner.firstName,
-            Number = n.extension
+            Id = n.owner?.id,
+            Type = types[n.owner?.type!],
+            Name = n.owner?.type == "PEOPLE" ? $"{n.owner.firstName} {n.owner.lastName}" : n.owner?.firstName,
+            Number = number != 0 && n.extension != null && !n.extension.Contains(query) ? n.phoneNumber ?? n.extension : n.extension ?? n.phoneNumber
         }).ToList() ?? [];
     }
 

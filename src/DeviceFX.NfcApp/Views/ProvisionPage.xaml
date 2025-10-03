@@ -55,38 +55,7 @@
             <Setter Property="TextColor" Value="Black"></Setter>
         </Style>
         <Style TargetType="RadioButton">
-            <Setter Property="VisualStateManager.VisualStateGroups">
-                <VisualStateGroupList>
-                    <VisualStateGroup x:Name="CheckedStates">
-                        <VisualState x:Name="Checked">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                <Setter Property="TextColor" Value="White" />
-                            </VisualState.Setters>
-                        </VisualState>
-                        <VisualState x:Name="Unchecked">
-                            <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="LightGray" />
-                                <Setter Property="TextColor" Value="Black" />
-                            </VisualState.Setters>
-                        </VisualState>
-                    </VisualStateGroup>
-                </VisualStateGroupList>
-            </Setter>
-            <!-- Remove the default checkmark -->
-            <Setter Property="ControlTemplate">
-                <ControlTemplate>
-                    <Border Stroke="{TemplateBinding BorderColor}"
-                            StrokeThickness="{TemplateBinding BorderWidth}"
-                            BackgroundColor="{TemplateBinding BackgroundColor}">
-                        <Label Text="{TemplateBinding Content}"
-                               TextColor="{TemplateBinding TextColor}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               Padding="10,5" />
-                    </Border>
-                </ControlTemplate>
-            </Setter>
+            <Setter Property="ControlTemplate" Value="{StaticResource SecondaryToggleRadioButtonTemplate}"/>
         </Style>
     </shared:StepContentPage.Resources>
     <ContentPage.Content>
@@ -106,8 +75,8 @@
                         <Label Text="Mode: " VerticalTextAlignment="Center" ></Label>
                         <Border StrokeShape="RoundRectangle 10" Stroke="Black">
                             <HorizontalStackLayout IsEnabled="{Binding Operation.State, Converter={StaticResource OperationIdleConverter}}">
-                                <RadioButton Content="MAC" FontSize="18" IsChecked="{Binding IsModelSelected, Converter={StaticResource InvertedBoolConverter}}"/>
-                                <RadioButton Content="Activation Code" FontSize="18" IsChecked="{Binding IsModelSelected}"/>
+                                <RadioButton Content="MAC" FontSize="20" IsChecked="{Binding IsModelSelected, Converter={StaticResource InvertedBoolConverter}}"/>
+                                <RadioButton Content="Activation Code" FontSize="20" IsChecked="{Binding IsModelSelected}"/>
                             </HorizontalStackLayout>
                         </Border>
                     </HorizontalStackLayout>

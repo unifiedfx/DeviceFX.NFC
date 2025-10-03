@@ -135,14 +135,14 @@ public static class MauiProgram
             {
                 options.IncludeScopes = true;
             });
-            builder.Logging.AddFilter((category, level) =>
-            {
-                if (category == null || level == LogLevel.Trace) return false;
-                if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
-                var settings = Application.Current?.Windows[0].Handler?.MauiContext?.Services.GetService<Settings>();
-                return settings is not {EnableDebug: false};
-            });
         }
+        builder.Logging.AddFilter((category, level) =>
+        {
+            if (category == null || level == LogLevel.Trace) return false;
+            if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
+            var settings = Application.Current?.Windows[0].Handler?.MauiContext?.Services.GetService<Settings>();
+            return settings is not {EnableDebug: false};
+        });
         builder.AddNfc();
 #if ANDROID
         // Custom mapping for Android to remove unnecessary space on the left side of the Shell TitleView
