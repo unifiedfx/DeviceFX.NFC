@@ -3,6 +3,7 @@
 <shared:StepContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                         xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+                        xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                         Priority="20"
                         Group="Onboarding"
                         Title="Onboarding"
@@ -10,9 +11,12 @@
                         x:Class="DeviceFX.NfcApp.Views.OnboardingPage">
     <ContentPage.Resources>
         <ResourceDictionary Source="../Resources/Styles/CustomStyles.xaml" />
+        <ResourceDictionary>
+            <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        </ResourceDictionary>
         <Style TargetType="RadioButton">
             <Setter Property="ControlTemplate"
-                    Value="{StaticResource ToggleRadioButtonTemplate}" />
+                    Value="{StaticResource PrimaryToggleRadioButtonTemplate}" />
         </Style>
     </ContentPage.Resources>
     <ContentPage.Content>
@@ -30,35 +34,47 @@
                         </VerticalStackLayout>
                     </RadioButton.Content>
                 </RadioButton>
-                <RadioButton Value="CUCM" x:Name="CUCMRadioButton">
+                <RadioButton Value="Priority" x:Name="PriorityRadioButton">
                     <RadioButton.Content>
                         <VerticalStackLayout>
-                            <Label StyleClass="Centered, Heading">CUCM</Label>
-                            <Label StyleClass="Centered, Subheading">CUCM Priority</Label>
+                            <Label StyleClass="Centered, Heading">Boot Priority</Label>
+                            <Label StyleClass="Centered, Subheading">CUCM or Cloud Priority</Label>
                         </VerticalStackLayout>
                     </RadioButton.Content>
                 </RadioButton>
-                <RadioButton Value="Cloud" x:Name="CloudRadioButton">
+                <RadioButton Value="Wifi" x:Name="WifiRadioButton" IsVisible="{Binding Settings.EnableDebug}">
                     <RadioButton.Content>
                         <VerticalStackLayout>
-                            <Label StyleClass="Centered, Heading">Cloud</Label>
-                            <Label StyleClass="Centered, Subheading">Cloud Priority</Label>
+                            <Label StyleClass="Centered, Heading">WiFi</Label>
+                            <Label StyleClass="Centered, Subheading">WiFi Settings</Label>
                         </VerticalStackLayout>
                     </RadioButton.Content>
                 </RadioButton>
             </StackLayout>
-            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference ActivationRadioButton}}">
+            <StackLayout Grid.Row="1" Spacing="10" IsVisible="{Binding IsChecked, Source={Reference ActivationRadioButton}}">
                 <Label StyleClass="Heading">Write Activation Code</Label>
                 <Label StyleClass="Subheading">Set the phone to directly register using the entered Activation Code</Label>
                 <Entry Text="{Binding ActivationCode}" Placeholder="Activation Code" Keyboard="Numeric"></Entry>
             </StackLayout>
-            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference CUCMRadioButton}}">
-                <Label StyleClass="Heading" FontAttributes="Bold">CUCM Priority</Label>
-                <Label StyleClass="Subheading">Set the phone onboarding mode to register with CUCM first</Label>
+            <StackLayout Grid.Row="1" Spacing="10" IsVisible="{Binding IsChecked, Source={Reference PriorityRadioButton}}">
+                <Label StyleClass="Heading" FontAttributes="Bold">Write Boot Priority</Label>
+                <Label StyleClass="Subheading">Set the phone onboarding mode to register with CUCM or Cloud first</Label>
+                <HorizontalStackLayout>
+                    <Label FontAttributes="Bold" FontSize="20" Text="Priority: " VerticalTextAlignment="Center" ></Label>
+                    <Border StrokeShape="RoundRectangle 10" Stroke="Black">
+                        <HorizontalStackLayout>
+                            <RadioButton ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}" Content="CUCM" FontSize="20" IsChecked="{Binding IsCloudPriority, Converter={StaticResource InvertedBoolConverter}}"/>
+                            <RadioButton ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}" Content="Cloud" FontSize="20" IsChecked="{Binding IsCloudPriority}"/>
+                        </HorizontalStackLayout>
+                    </Border>
+                </HorizontalStackLayout>
             </StackLayout>
-            <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference CloudRadioButton}}">
-                <Label StyleClass="Heading">Cloud Priority</Label>
-                <Label StyleClass="Subheading">Set the phone onboarding mode to register with a cloud service first</Label>
+            <StackLayout Grid.Row="1" Spacing="10" IsVisible="{Binding IsChecked, Source={Reference WifiRadioButton}}">
+                <Label StyleClass="Heading">Write Wifi Settings</Label>
+                <Label StyleClass="Subheading">Set the phone WiFi settings, phone needs to be powered on before scanning</Label>
+                <Entry Text="{Binding WifiName}" Placeholder="Wifi name"></Entry>
+                <Entry Text="{Binding WifiUser}" Placeholder="Wifi user"></Entry>
+                <Entry Text="{Binding WifiPassword}" Placeholder="Wifi password" IsPassword="True"></Entry>
             </StackLayout>
             <shared:NavigationButtonsView Grid.Row="3" BackCommand="{Binding BackCommand}" NextButtonText="Save" NextCommand="{Binding OnboardingCommand}" NextButtonImageSource="nfc_icon.png" />
         </Grid>

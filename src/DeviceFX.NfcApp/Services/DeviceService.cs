@@ -134,7 +134,15 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 await SetResult($"{operation.Phone.Pid} details read", true, cancellationToken: cancellationToken);
                 return null;
             }
-            var config = operation.Phone.CreateConfig(operation.Onboarding);
+            string? config = null;
+            try
+            {
+                config = operation.Phone.CreateConfig(operation.Onboarding);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Config Error");
+            }
             if(config != null)
             {
                 var payload = operation.Phone.Encrypt(config);

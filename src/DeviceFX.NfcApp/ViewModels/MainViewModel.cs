@@ -24,9 +24,9 @@ public partial class MainViewModel : WizardViewModelBase
     private readonly IInventoryService inventoryService;
     private readonly IPopupService popupService;
 
-    public const string OnboardingCucm = "CUCM";
-    public const string OnboardingCloud = "Cloud";
+    public const string OnboardingPriority = "Priority";
     public const string OnboardingActivation = "Activation";
+    public const string OnboardingWifi = "Wifi";
     public const string SelectedProvision = "Search";
     public const string SelectedOnboarding = "Onboarding";
     public const string SelectedInventory = "Inventory";
@@ -80,30 +80,62 @@ public partial class MainViewModel : WizardViewModelBase
     [Preference<string>("activation-code")]
     private string? activationCode;
     
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<string>("wifi-name")]
+    private string? wifiName;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<string>("wifi-user")]
+    private string? wifiUser;
+    
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [SecurePreference<string>("wifi-password")]
+    private string? wifiPassword;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<bool>("cloud-priority")]
+    private bool isCloudPriority;
+    
     [RelayCommand(CanExecute = nameof(CanExecuteOnboarding))]
     public async Task OnboardingAsync()
     {
         Operation.Reset();
         switch (OnboardingMode)
         {
-            case OnboardingCucm:
-                Operation.Onboarding.Add("onboardingMethod","4");
-                Operation.Merge = true;
-                break;
-            case OnboardingCloud:
-                Operation.Onboarding.Add("onboardingMethod","2");
+            case OnboardingPriority:
+                Operation.Onboarding.Add("onboardingMethod", IsCloudPriority ? "2" : "4");
                 Operation.Merge = true;
                 break;
             case OnboardingActivation:
                 Operation.Onboarding.Add("onboardingMethod","3");
-                Operation.Onboarding.Add("onboardingDetail",ActivationCode);
+                Operation.Onboarding.Add("onboardingDetail", ActivationCode);
                 Operation.ActivationCode = ActivationCode;
                 break;
+            case OnboardingWifi:
+                if(!string.IsNullOrWhiteSpace(WifiName)) Operation.Onboarding.Add("Network_Name_1_",WifiName);
+                if(!string.IsNullOrWhiteSpace(WifiUser)) Operation.Onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
+                if(!string.IsNullOrWhiteSpace(WifiPassword)) Operation.Onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
+                if (Operation.Onboarding.Any())
+                {
+                    Operation.Onboarding.Add("Security_Mode_1_","PSK");
+                    Operation.Onboarding.Add("Frequency_Band_1_","Auto");                    
+                }
+                break;                
         }
         Operation.Mode = $"Onboarding:{OnboardingMode}";
         await deviceService.ScanPhoneAsync(Operation);
     }
-    public bool CanExecuteOnboarding() => OnboardingMode != OnboardingActivation || !string.IsNullOrEmpty(ActivationCode);
+    public bool CanExecuteOnboarding() =>
+        OnboardingMode switch
+        {
+            OnboardingActivation => !string.IsNullOrEmpty(ActivationCode),
+            OnboardingWifi => !string.IsNullOrEmpty(WifiName) && !string.IsNullOrEmpty(WifiPassword),
+            _ => true
+        };
 
     #endregion
 
