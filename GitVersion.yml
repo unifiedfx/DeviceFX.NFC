@@ -3,6 +3,7 @@ branches:
   main:
     regex: ^main$
     increment: Minor
+    is-mainline: true
     prevent-increment-of-merged-branch-version: false
     tag: ''
   develop:

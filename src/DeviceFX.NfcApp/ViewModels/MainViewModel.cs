@@ -162,15 +162,19 @@ public partial class MainViewModel : WizardViewModelBase
 
     private CancellationTokenSource searchCts = new();
     [RelayCommand]
-    public async Task SearchAsync(string? query)
+    public void Search(string? query)
     {
-        await searchCts.CancelAsync();
+        searchCts.Cancel();
         searchCts = new();
-        _ = Search();
-        async Task Search()
+        _ = Task.Run(Query);
+        async Task Query()
         {
-            var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, searchCts.Token);
-            if (string.IsNullOrEmpty(query) || !results.Any()) 
+            var token = searchCts.Token;
+            await Task.Delay(300, token);
+            if(token.IsCancellationRequested) return;
+            var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, token);
+            if(token.IsCancellationRequested) return;
+            if (string.IsNullOrEmpty(query) || results.Count == 0) 
                 SearchResults.Clear();
             else
                 SearchResults = new ObservableCollection<SearchResult>(results.Order());
