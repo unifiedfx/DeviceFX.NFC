@@ -2,7 +2,7 @@ mode: Mainline
 branches:
   main:
     regex: ^main$
-    increment: Patch
+    increment: Minor
     prevent-increment-of-merged-branch-version: false
     tag: ''
   develop:
