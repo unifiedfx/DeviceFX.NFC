@@ -4,8 +4,14 @@ parameters:
     default: 'macOS-15'
 
 trigger:
-  - main
-  - develop
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - DeviceFX.Function.sln 
+      - src/DeviceFX.Function/*
 
 variables:
   - group: 'DeviceFX NFC Variables'
