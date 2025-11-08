@@ -64,7 +64,12 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         await Settings.Webex.LoadAsync();
         if (!await webexService.UpdateUser(Settings.User, Settings.Webex.OrgId) && login)
         {
-            if (!await webexService.LoginAsync(Settings.User, Settings.Webex.OrgId, Settings.Webex.Email)) return;
+            if (!await webexService.LoginAsync(Settings.User, Settings.Webex.OrgId, Settings.Webex.Email))
+            {
+                await Settings.Webex.RemoveAsync(nameof(Settings.Webex.Email));
+                await Settings.Webex.RemoveAsync(nameof(Settings.Webex.OrgId));
+                return;
+            }
             Settings.Webex.Email = Settings.User.Email;
             Settings.Webex.OrgId = Settings.User.Organization?.Id; 
             if(Settings.Webex.Email != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.Email));

@@ -54,6 +54,7 @@ public partial class UserProfile : ObservableObject
     {
         DisplayName = null;
         Picture = null;
+        Email = null;
         Organizations = [];
         IsLoggedIn = false;
         MustLogin = true;
