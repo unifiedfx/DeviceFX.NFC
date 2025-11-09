@@ -112,6 +112,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
 
     private async Task<bool> RetryLogin()
     {
+        if (!MainThread.IsMainThread) return await MainThread.InvokeOnMainThreadAsync(RetryLogin);
         var retryLogin = await Shell.Current.DisplayAlert("Login", "Session timeout, login again?", "Login", "Ok");
         if (!retryLogin)
         {
