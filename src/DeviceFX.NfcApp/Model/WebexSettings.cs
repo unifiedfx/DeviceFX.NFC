@@ -18,6 +18,9 @@ public partial class WebexSettings : ObservableObject
     private string scopes;
 
     [ObservableProperty]
+    private string[] licenseFilters;
+
+    [ObservableProperty]
     [Preference<long>("expires-in", 0)]
     private long tokenExpires;
 

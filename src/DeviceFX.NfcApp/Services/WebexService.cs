@@ -73,7 +73,11 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         var httpClient = await GetHttpClient();
         if(httpClient == null) return;
         var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={user.Organization.Id}");
-        user.Organization.LicenseIds = licenses?.items.Where(i => i.name.Contains("Webex Calling", StringComparison.InvariantCultureIgnoreCase)).Select(l => l.id).ToList() ?? new List<string>();
+        user.Organization.LicenseIds =
+            licenses?.items
+                .Where(i => settings.Webex.LicenseFilters.Any(f =>
+                    i.name.Contains(f, StringComparison.InvariantCultureIgnoreCase))).Select(l => l.id).ToList() ??
+            new List<string>();
     }
 
     public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string? personId = null, string? workspaceId = null)
