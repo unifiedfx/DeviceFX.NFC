@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceFX.Proxy.CDA", "src\DeviceFX.Proxy.CDA\DeviceFX.Proxy.CDA.csproj", "{31028AB9-253A-4ED8-AB89-2E179BBAC055}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFiles", "SolutionFiles", "{8E519B9F-F61E-4590-AB1B-58318F4CFD32}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\deploy-to-dockerhub.yml = .github\workflows\deploy-to-dockerhub.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{31028AB9-253A-4ED8-AB89-2E179BBAC055}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31028AB9-253A-4ED8-AB89-2E179BBAC055}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31028AB9-253A-4ED8-AB89-2E179BBAC055}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31028AB9-253A-4ED8-AB89-2E179BBAC055}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
