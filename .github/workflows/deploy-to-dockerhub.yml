@@ -26,7 +26,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
+          platforms: linux/amd64,linux/arm64
           context: src/DeviceFX.Proxy.CDA/
           file: src/DeviceFX.Proxy.CDA/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/unifiedfx/devicefx.proxy.cda:latest
+          tags: unifiedfx/devicefx.proxy.cda:latest
