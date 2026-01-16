@@ -29,4 +29,4 @@ jobs:
           context: src/DeviceFX.Proxy.CDA/
           file: src/DeviceFX.Proxy.CDA/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/unifiedfx/DeviceFX.Proxy.CDA:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/unifiedfx/devicefx.proxy.cda:latest
