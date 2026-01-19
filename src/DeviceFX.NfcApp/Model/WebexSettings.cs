@@ -19,6 +19,9 @@ public partial class WebexSettings : ObservableObject
 
     [ObservableProperty]
     private string[] licenseFilters;
+    
+    [ObservableProperty]
+    private string cdaServiceUrl;
 
     [ObservableProperty]
     [Preference<long>("expires-in", 0)]

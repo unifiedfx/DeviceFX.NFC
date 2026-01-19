@@ -57,7 +57,7 @@
             </StackLayout>
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference OnboardingRadioButton}}">
                 <Label StyleClass="Heading">Set onboarding mode</Label>
-                <Label StyleClass="Subheading">Set the onboarding mode of the scanned phone, e.g. CUCM/Cloud first or save an Activation Code (even when in the box)</Label>
+                <Label StyleClass="Subheading">Set the onboarding mode of the scanned phone, e.g. Cloud, CUCM or save an Activation Code/Wifi Settings (even when in the box)</Label>
             </StackLayout>
             <StackLayout Grid.Row="1" IsVisible="{Binding IsChecked, Source={Reference InventoryRadioButton}}">
                 <Label StyleClass="Heading">Export phone details</Label>
@@ -73,8 +73,8 @@
                     </Image>                    
                 </HorizontalStackLayout>
             </Grid>
-            <Button Grid.Row="5" Text="Login" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding LoginCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
-            <Button Grid.Row="5" Text="Start" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="5" Text="Login" FontAttributes="Bold" IsVisible="{Binding Settings.User.MustLogin}" FontSize="20" Command="{Binding LoginCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
+            <Button Grid.Row="5" Text="Start" FontAttributes="Bold" IsVisible="{Binding Settings.User.MustLogin, Converter={StaticResource InvertedBoolConverter}}" FontSize="20" Command="{Binding StartCommand}" CommandParameter="{Binding SelectedMode}" HorizontalOptions="FillAndExpand"></Button>
         </Grid>
     </ContentPage.Content>
 </shared:StepContentPage>

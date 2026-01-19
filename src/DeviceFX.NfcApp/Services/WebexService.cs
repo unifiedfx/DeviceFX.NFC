@@ -15,6 +15,9 @@ namespace DeviceFX.NfcApp.Services;
 
 public class WebexService(Settings settings, ILogger<WebexService> logger, TelemetryClient? telemetryClient = null) : IWebexService, ISearchService
 {
+    public const string UserType = "User";
+    public const string WorkspaceType = "Workspace";
+    
     public Func<Task<bool>>? RetryLogin { get; set; }
 
     public async Task<bool> LoginAsync(UserProfile user, string? orgId = null, string? email = null)
@@ -80,17 +83,16 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
             new List<string>();
     }
 
-    public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string? personId = null, string? workspaceId = null)
+    public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string type, string? id = null)
     {
-        if(personId == null && workspaceId == null) throw new ArgumentNullException(nameof(personId));
+        if(id == null) throw new ArgumentNullException(nameof(id));
         var newModel = "Cisco " + Regex.Match(model, @"\d{4}").Value;
         var data = new Dictionary<string, object>
         {
             { "mac", mac },
             { "model", newModel }
         };
-        if(personId != null) data.Add("personId", personId);
-        if(workspaceId != null) data.Add("workspaceId", workspaceId);
+        data.Add(type == UserType ? "personId" : "workspaceId", id);
         var httpClient = await GetHttpClient(true);
         if (httpClient == null) return null;
         var startTime = DateTime.UtcNow;
@@ -115,17 +117,15 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         return result;
     }
 
-    public async Task<ActivationResult> AddDeviceByActivationCode(string orgId, string model, string? personId = null,
-        string? workspaceId = null)
+    public async Task<ActivationResult> AddDeviceByActivationCode(string orgId, string model, string type, string? id = null)
     {
-        if(personId == null && workspaceId == null) throw new ArgumentNullException(nameof(personId));
+        if(id == null) throw new ArgumentNullException(nameof(id));
         var newModel = "Cisco " + Regex.Match(model, @"\d{4}").Value;
         var data = new Dictionary<string, object>
         {
             { "model", newModel }
         };
-        if(personId != null) data.Add("personId", personId);
-        if(workspaceId != null) data.Add("workspaceId", workspaceId);
+        data.Add(type == UserType ? "personId" : "workspaceId", id);
         var httpClient = await GetHttpClient(true);
         if (httpClient == null) return null;
         var startTime = DateTime.UtcNow;
@@ -139,8 +139,16 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
             {
                 trackingId = values.FirstOrDefault();
             }
-            logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", response.ReasonPhrase, trackingId);
-            return new ActivationResult(Error: response.ReasonPhrase);
+            string? errorMessage = null;
+            try
+            {
+                var errorContent = await response.Content.ReadFromJsonAsync<JsonElement>();
+                errorContent.TryGetProperty("message", out var message);
+                errorMessage = message.GetString();
+            }
+            catch (Exception) { }
+            logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", errorMessage ?? response.ReasonPhrase, trackingId);
+            return new ActivationResult(Error: errorMessage ?? response.ReasonPhrase);
         }
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
         if (telemetryClient != null)
@@ -182,7 +190,7 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         if (long.TryParse(query, out var number))
             path += $"&extension={encodedQuery}&phoneNumber={encodedQuery}";
         path += $"&ownerName={encodedQuery}";
-        var types = new Dictionary<string, string> {{"PEOPLE", "User"},{"PLACE", "Workspace"}};
+        var types = new Dictionary<string, string> {{"PEOPLE", UserType},{"PLACE", WorkspaceType}};
         WebexPhoneNumbersDto? numbers = null;
         try
         {
@@ -216,7 +224,7 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
             result.Issue = "Unable to validate";
             return;
         }
-        if (result.Type == "User") await CheckPerson();
+        if (result.Type == UserType) await CheckPerson();
         else await CheckWorkspace();
         result.Checked = true;
 
@@ -268,16 +276,16 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
                 result.Issue = "Unable to validate";
                 return;
             }
-            if(workspace.calling.webexCalling.licenses.Length == 0)
+            result.Checked = true;
+            if (workspace.calling.type.Contains("free")) return;
+            if (workspace.calling.webexCalling == null || workspace.calling.webexCalling.licenses.Length == 0)
             {
-                result.Checked = true;
                 result.Issue = "No license";
                 return;
             }
             var license = LicenseIds.FirstOrDefault(l => workspace.calling.webexCalling.licenses.Contains(l));
             if(license == null)
             {
-                result.Checked = true;
                 result.Issue = "No calling license";
             }
         }

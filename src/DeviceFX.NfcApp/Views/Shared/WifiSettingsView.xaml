@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="DeviceFX.NfcApp.Views.Shared.WifiSettingsView">
+    <ContentView.Resources>
+        <ResourceDictionary Source="../../Resources/Styles/CustomStyles.xaml">
+            <toolkit:BoolToObjectConverter x:Key="BoolToObjectConverter" TrueObject="True" FalseObject="False" />
+        </ResourceDictionary>
+        <Style TargetType="RadioButton">
+            <Setter Property="ControlTemplate" Value="{StaticResource SecondaryToggleRadioButtonTemplate}" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+    </ContentView.Resources>
+    <VerticalStackLayout Spacing="15" Padding="10">
+        <HorizontalStackLayout 
+            HorizontalOptions="Center"
+            RadioButtonGroup.SelectedValue="{Binding WifiInclude, Mode=TwoWay, Converter={StaticResource BoolToObjectConverter}}"
+            RadioButtonGroup.GroupName="WifiInclude">
+            <Label StyleClass="Heading" Text="Include WiFi: "></Label>
+            <Border StrokeShape="RoundRectangle 10" Stroke="Black">
+                <HorizontalStackLayout>
+                    <RadioButton x:Name="WifiInclude" Value="True" Content="Yes" FontSize="20" />
+                    <RadioButton Value="False" Content="No" FontSize="20" />
+                </HorizontalStackLayout>
+            </Border>
+        </HorizontalStackLayout>
+        <VerticalStackLayout Spacing="15" Padding="0" 
+                             IsEnabled="{Binding IsChecked, Source={Reference WifiInclude}}">
+            <HorizontalStackLayout>
+                <Label StyleClass="FormLabel">Security Mode: </Label>
+                <Picker ItemsSource="{Binding WifiSecurityModes}"
+                        SelectedItem="{Binding WifiSecurityMode, Mode=TwoWay}"
+                        FontSize="20"
+                        MinimumWidthRequest="120"
+                        ItemDisplayBinding="{Binding .}" />
+            </HorizontalStackLayout>
+            <Grid ColumnDefinitions="Auto, *">
+                <Label StyleClass="FormLabel" Text="Name: "></Label>
+                <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiName}" Placeholder="Wifi name/SSID (Required)"></Entry>
+            </Grid>
+            <Grid ColumnDefinitions="Auto, *" IsVisible="{Binding WifiIncludeUsername}">
+                <Label StyleClass="FormLabel" Text="User: "></Label>
+                <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiUser}" Placeholder="Wifi username (Required)"></Entry>
+            </Grid>
+            <Grid ColumnDefinitions="Auto, *" IsVisible="{Binding WifiIncludePassword}">
+                <Label StyleClass="FormLabel" Text="Password: "></Label>
+                <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiPassword}" Placeholder="Wifi password (Required)" IsPassword="True"></Entry>                
+            </Grid>
+            <HorizontalStackLayout 
+                RadioButtonGroup.SelectedValue="{Binding WifiBand}"
+                RadioButtonGroup.GroupName="WifiBand">
+                <Label StyleClass="FormLabel" Text="Band: "></Label>
+                <Border StrokeShape="RoundRectangle 10" Stroke="Black">
+                    <HorizontalStackLayout>
+                        <RadioButton ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}" Value="Auto" Content="Auto" FontSize="20" />
+                        <RadioButton ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}" Value="2.4 GHz" Content="2.4 GHz" FontSize="20" />
+                        <RadioButton ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}" Value="5 GHz" Content="5 GHz" FontSize="20" />
+                    </HorizontalStackLayout>
+                </Border>
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

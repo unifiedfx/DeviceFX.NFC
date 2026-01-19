@@ -4,13 +4,13 @@ using Microsoft.Extensions.Options;
 
 namespace DeviceFX.Proxy.CDA;
 
-public interface ITokenService
+public interface ICdaTokenService
 {
     Task<string> GetAccessTokenAsync();
 }
 
-public class TokenService(IHttpClientFactory httpClientFactory, IOptions<CiscoOptions> options, IMemoryCache cache)
-    : ITokenService
+public class CdaTokenService(IHttpClientFactory httpClientFactory, IOptions<CiscoOptions> options, IMemoryCache cache)
+    : ICdaTokenService
 {
     private readonly object @lock = new object();
 

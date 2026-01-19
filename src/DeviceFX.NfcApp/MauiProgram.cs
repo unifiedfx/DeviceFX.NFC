@@ -33,12 +33,15 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 #if IOS
+        builder.Services.AddSingleton<IAttestationService, iOSAttestationService>();
         // https://learn.microsoft.com/en-us/dotnet/maui/whats-new/dotnet-9?view=net-maui-9.0#collectionview-and-carouselview
         builder.ConfigureMauiHandlers(handlers =>
         {
-            handlers.AddHandler<Microsoft.Maui.Controls.CollectionView, Microsoft.Maui.Controls.Handlers.Items2.CollectionViewHandler2>();
-            handlers.AddHandler<Microsoft.Maui.Controls.CarouselView, Microsoft.Maui.Controls.Handlers.Items2.CarouselViewHandler2>();
+            handlers.AddHandler<CollectionView, Microsoft.Maui.Controls.Handlers.Items2.CollectionViewHandler2>();
+            handlers.AddHandler<CarouselView, Microsoft.Maui.Controls.Handlers.Items2.CarouselViewHandler2>();
         });
+#elif ANDROID
+        builder.Services.AddSingleton<IAttestationService, AndroidAttestationService>();
 #endif
         builder.ConfigureLifecycleEvents(events =>
         {
@@ -86,6 +89,7 @@ public static class MauiProgram
         var configuration = configBuilder.Build();
         builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
+        builder.Services.AddSingleton<CdaService>();
         builder.Services.AddSingleton<WebexService>();
         builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
         builder.Services.AddSingleton<IWebexService>(provider => provider.GetRequiredService<WebexService>());

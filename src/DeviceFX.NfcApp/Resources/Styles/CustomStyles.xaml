@@ -13,4 +13,42 @@
         <Setter Property="HorizontalOptions" Value="Center"></Setter>
         <Setter Property="VerticalOptions" Value="Center"></Setter>
     </Style>
+    <Style TargetType="Label" Class="FormLabel">
+        <Setter Property="HorizontalOptions" Value="Center"></Setter>
+        <Setter Property="VerticalOptions" Value="Center"></Setter>
+        <Setter Property="FontAttributes" Value="Bold"></Setter>
+        <Setter Property="FontSize" Value="18"></Setter>
+    </Style>
+    <Style TargetType="Entry" Class="FormEntry">
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <Setter.Value>
+                <VisualStateGroupList>
+                    <VisualStateGroup x:Name="CommonStates">
+                        <VisualState x:Name="Normal">
+                            <VisualState.Setters>
+                                <Setter Property="PlaceholderColor" Value="{StaticResource Gray400}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource Gray100}" />
+                                <Setter Property="TextColor" Value="Black" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Focused">
+                            <VisualState.Setters>
+                                <Setter Property="PlaceholderColor" Value="{StaticResource Gray400}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource Gray100}" />
+                                <Setter Property="TextColor" Value="Black" />
+                            </VisualState.Setters>
+                        </VisualState>
+                        <VisualState x:Name="Disabled">
+                            <VisualState.Setters>
+                                <Setter Property="PlaceholderColor" Value="{StaticResource Gray400}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource Gray100}" />
+                                <Setter Property="TextColor" Value="Black" />
+                                <Setter Property="Opacity" Value="0.3" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

@@ -12,6 +12,8 @@ trigger:
     exclude:
       - DeviceFX.Function.sln 
       - src/DeviceFX.Function/*
+      - DeviceFX.Proxy.CDA.sln
+      - src/DeviceFX.Proxy.CDA/*
 
 variables:
   - group: 'DeviceFX NFC Variables'

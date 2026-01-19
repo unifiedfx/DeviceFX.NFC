@@ -24,7 +24,7 @@ public class WebexWorkspaceDto
     public class Calling
     {
         public string type { get; set; }
-        public WebexCalling webexCalling { get; set; }
+        public WebexCalling? webexCalling { get; set; }
     }
 
     public class WebexCalling

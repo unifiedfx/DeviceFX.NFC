@@ -10,6 +10,11 @@
 
     <ItemGroup>
         <PackageReference Include="Duende.IdentityModel" Version="8.0.0" />
+        <PackageReference Include="Google.Apis.PlayIntegrity.v1" Version="1.70.0.3892" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
+        <PackageReference Include="System.Formats.Cbor" Version="10.0.2" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
         <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
     </ItemGroup>
     

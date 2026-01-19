@@ -23,16 +23,27 @@ public partial class MainViewModel : WizardViewModelBase
     private readonly IDeviceService deviceService;
     private readonly IInventoryService inventoryService;
     private readonly IPopupService popupService;
+    private readonly CdaService cdaService;
 
-    public const string OnboardingPriority = "Priority";
+    public const string OnboardingCloud = "Cloud";
     public const string OnboardingActivation = "Activation";
-    public const string OnboardingWifi = "Wifi";
+    public const string OnboardingCUCM = "CUCM";
     public const string SelectedProvision = "Search";
     public const string SelectedOnboarding = "Onboarding";
     public const string SelectedInventory = "Inventory";
 
     /// <inheritdoc/>
-    public MainViewModel(AppViewModel appViewModel, SettingsViewModel settingsViewModel, Operation operation, IEnumerable<StepContentPage> steps, ISearchService searchService, IWebexService webexService, IDeviceService deviceService, IInventoryService inventoryService, IPopupService popupService, IMessenger messenger) : base(steps)
+    public MainViewModel(AppViewModel appViewModel,
+        SettingsViewModel settingsViewModel,
+        Operation operation,
+        IEnumerable<StepContentPage> steps,
+        ISearchService searchService,
+        IWebexService webexService,
+        IDeviceService deviceService,
+        IInventoryService inventoryService,
+        IPopupService popupService,
+        CdaService cdaService,
+        IMessenger messenger) : base(steps)
     {
         this.appViewModel = appViewModel;
         this.settingsViewModel = settingsViewModel;
@@ -42,6 +53,7 @@ public partial class MainViewModel : WizardViewModelBase
         this.deviceService = deviceService;
         this.inventoryService = inventoryService;
         this.popupService = popupService;
+        this.cdaService = cdaService;
         messenger.Register<OrganizationMessage>(this, async (recipient, message) =>
         {
             SearchResults.Clear();
@@ -72,13 +84,39 @@ public partial class MainViewModel : WizardViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
-    [Preference<string>("onboarding-mode", OnboardingActivation)]
-    private string onboardingMode = OnboardingActivation;
+    [Preference<string>("onboarding-mode", OnboardingCloud)]
+    private string onboardingMode = OnboardingCloud;
 
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<string>("cloud-profile")]
+    private string? cloudProfile;
+
+    [ObservableProperty] 
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))] 
+    [Preference<string>("cloud-ca-rule")]
+    private string? cloudCaRule;
+    
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<string>("cucm-server")]
+    private string? cucmServer;
+    
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
     [Preference<string>("activation-code")]
     private string? activationCode;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ProvisionCommand))]
+    [Preference<bool>("wifi-include", false)]
+    private bool wifiInclude;
+    
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [Preference<string>("wifi-security-mode", "PSK")]
+    private string wifiSecurityMode;
     
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
@@ -94,48 +132,146 @@ public partial class MainViewModel : WizardViewModelBase
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
     [SecurePreference<string>("wifi-password")]
     private string? wifiPassword;
-
+    
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
-    [Preference<bool>("cloud-priority")]
-    private bool isCloudPriority;
+    [Preference<string>("wifi-band", "Auto")]
+    private string wifiBand;
+
+    [ObservableProperty] private string[] wifiSecurityModes = ["Auto","PSK","EAP-FAST","EAP-PEAP", "None"];
+
+    [ObservableProperty] private bool wifiIncludeUsername;
+
+    [ObservableProperty] private bool wifiIncludePassword = true;
     
+    [ObservableProperty] private bool wifiCanInclude;
+
+    [ObservableProperty] private bool cdaCheckBusy;
+    
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ProvisionCommand))]
+    private string? canSignError;
+    
+    private bool? canSignData;
+    
+    private async Task ShowCdaError(string? error)
+    {
+        if(error == null) return;
+        await MainThread.InvokeOnMainThreadAsync(() => CanSignError = error);
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            CanSignError = null;
+            canSignData = null;
+        });
+    }
+
     [RelayCommand(CanExecute = nameof(CanExecuteOnboarding))]
     public async Task OnboardingAsync()
     {
+        if (!await CheckCanSignData(OnboardingMode)) return;
         Operation.Reset();
-        switch (OnboardingMode)
-        {
-            case OnboardingPriority:
-                Operation.Onboarding.Add("onboardingMethod", IsCloudPriority ? "2" : "4");
-                Operation.Merge = true;
-                break;
-            case OnboardingActivation:
-                Operation.Onboarding.Add("onboardingMethod","3");
-                Operation.Onboarding.Add("onboardingDetail", ActivationCode);
-                Operation.ActivationCode = ActivationCode;
-                break;
-            case OnboardingWifi:
-                if(!string.IsNullOrWhiteSpace(WifiName)) Operation.Onboarding.Add("Network_Name_1_",WifiName);
-                if(!string.IsNullOrWhiteSpace(WifiUser)) Operation.Onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
-                if(!string.IsNullOrWhiteSpace(WifiPassword)) Operation.Onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
-                if (Operation.Onboarding.Any())
-                {
-                    Operation.Onboarding.Add("Security_Mode_1_","PSK");
-                    Operation.Onboarding.Add("Frequency_Band_1_","Auto");                    
-                }
-                break;                
-        }
+        Operation.Onboarding = GetOnboarding(OnboardingMode, ActivationCode);
+        if (OnboardingMode == OnboardingActivation) Operation.ActivationCode = ActivationCode;
+        Operation.Merge = true;
         Operation.Mode = $"Onboarding:{OnboardingMode}";
         await deviceService.ScanPhoneAsync(Operation);
     }
-    public bool CanExecuteOnboarding() =>
-        OnboardingMode switch
+    
+    public bool CanExecuteOnboarding()
+    {
+        if(WifiInclude && !WifiValid()) return false;
+        var requiresSigning = RequiresSigning(GetOnboarding(OnboardingMode, ActivationCode));
+        var canSign = !requiresSigning || !canSignData.HasValue || canSignData.Value || CanSignError == null;
+        return OnboardingMode switch
         {
-            OnboardingActivation => !string.IsNullOrEmpty(ActivationCode),
-            OnboardingWifi => !string.IsNullOrEmpty(WifiName) && !string.IsNullOrEmpty(WifiPassword),
-            _ => true
+            OnboardingActivation => canSign && !string.IsNullOrEmpty(ActivationCode),
+            _ => canSign
         };
+    }
+    
+    public async Task<bool> CheckCanSignData(string mode, string messageTemplate = "{0}")
+    {
+        var onboarding = GetOnboarding(mode);
+        var requiresSigning = RequiresSigning(onboarding);
+        if(!requiresSigning) return true;
+        if (canSignData.HasValue) return canSignData.Value;
+        string? error = null;
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            CdaCheckBusy = true;
+            canSignData = await cdaService.CanSignData(cts.Token);
+            if (!canSignData.Value)
+            {
+                error = cdaService.GetError();
+                CdaCheckBusy = false;
+                await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+            }
+        }
+        catch (Exception)
+        {
+            canSignData = false;
+            error = "Service unreachable";
+            CdaCheckBusy = false;
+            await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+        }
+        CdaCheckBusy = false;
+        if(error != null) _ = ShowCdaError(error);
+        return canSignData.HasValue && canSignData.Value;
+    }
+
+    private IDictionary<string,string> GetOnboarding(string mode, string? code = null)
+    { 
+        var onboarding = new Dictionary<string, string>();
+        switch (mode)
+        {
+            case OnboardingCUCM:
+                if(!string.IsNullOrWhiteSpace(CucmServer)) onboarding.Add(Operation.OnboardingDetail, CucmServer);
+                onboarding.Add(Operation.OnboardingMethod, onboarding.ContainsKey(Operation.OnboardingDetail) ? "5" : "4");
+                break;
+            case OnboardingActivation:
+                if(!string.IsNullOrWhiteSpace(code)) onboarding.Add(Operation.OnboardingDetail, code);
+                onboarding.Add(Operation.OnboardingMethod,"3");
+                break;
+            default:
+                if(mode == OnboardingCloud && !string.IsNullOrWhiteSpace(CloudProfile)) onboarding.Add(Operation.OnboardingDetail, CloudProfile);
+                if(mode == OnboardingCloud && !string.IsNullOrWhiteSpace(CloudCaRule)) onboarding.Add("Custom_CA_Rule", CloudCaRule);
+                onboarding.Add(Operation.OnboardingMethod, onboarding.ContainsKey(Operation.OnboardingDetail) ? "1" : "2");
+                break;
+        }
+        if (!WifiInclude || !WifiValid()) return onboarding;
+        if(!string.IsNullOrWhiteSpace(WifiName)) onboarding.Add("Network_Name_1_",WifiName);
+        if(WifiIncludeUsername && !string.IsNullOrWhiteSpace(WifiUser)) onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
+        if(WifiIncludePassword && !string.IsNullOrWhiteSpace(WifiPassword)) onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
+        onboarding.Add("Wi-Security_Mode_1_", string.IsNullOrWhiteSpace(WifiSecurityMode) ? "Auto" : WifiSecurityMode);
+        onboarding.Add("Wi-Frequency_Band_1_", string.IsNullOrWhiteSpace(WifiBand) ? "Auto" : WifiBand);
+        return onboarding;
+    }
+
+    private bool RequiresSigning(IDictionary<string,string> onboarding)
+    {
+        var onboardingMethod = 2;
+        if (onboarding.TryGetValue(Operation.OnboardingMethod, out var onboardingMethodValue))
+        {
+            onboardingMethod = int.TryParse(onboardingMethodValue, out var method) ? method : 2;            
+        }
+        if(onboardingMethod is 1 or 5) return true;
+        var ignoreCount = onboarding.Count(d => d.Key is Operation.OnboardingMethod or Operation.OnboardingDetail);
+        return onboarding.Count > ignoreCount;
+    }
+
+    private bool WifiValid()
+    {
+        WifiIncludeUsername = WifiSecurityMode switch {"PSK" or "None" => false, _ => true};
+        WifiIncludePassword = WifiSecurityMode switch {"None" => false, _ => true};
+        if(string.IsNullOrWhiteSpace(WifiName)) return false;
+        if (WifiIncludeUsername && string.IsNullOrWhiteSpace(WifiUser)) return false;
+        if (WifiIncludePassword && string.IsNullOrWhiteSpace(WifiPassword)) return false;
+        return true;
+    }
+    
 
     #endregion
 
@@ -239,9 +375,17 @@ public partial class MainViewModel : WizardViewModelBase
     private List<string> models = new(["DP-9841", "DP-9851", "DP-9861", "DP-9871"]);
     
     
-    [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
+    public bool CanExecuteProvision()
+    {
+        WifiCanInclude = WifiValid();
+        var requiresSigning = RequiresSigning(GetOnboarding("Provision"));
+        return SearchSelection != null && (!requiresSigning || !canSignData.HasValue || canSignData.Value || CanSignError == null);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExecuteProvision))]
     public async Task ProvisionAsync()
     {
+        if(SearchSelection == null) return;
         // Start NFC Read then provision to Webex
         if(Operation.State == OperationState.Success)
         {
@@ -250,6 +394,13 @@ public partial class MainViewModel : WizardViewModelBase
             await NextAsync();
             return;
         }
+
+        if (!await CheckCanSignData("Provision", "{0}, cannot save WiFi details at this time"))
+        {
+            await MainThread.InvokeOnMainThreadAsync(() => WifiInclude = false);
+            return;
+        }
+
         Operation.Reset();
         appViewModel.Title = "Provisioning";
         Operation.State = OperationState.InProgress;
@@ -262,21 +413,20 @@ public partial class MainViewModel : WizardViewModelBase
             Operation.DisplayNumber = SearchSelection?.Number;
             if (string.IsNullOrEmpty(ProvisionActivationCode))
             {
-                result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+                result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, type: SearchSelection.Type, id: SearchSelection.Id);
             }
             if (!string.IsNullOrEmpty(result.Error))
             {
                 Operation.Result = result.Error;
                 Operation.State = OperationState.Failure;
+                Operation.Phone ??= new PhoneDetails();
                 appViewModel.Title = "Provision";
             }
             else
             {
                 ProvisionActivationCode = result.Code;
                 Operation.ActivationCode = ProvisionActivationCode;
-                Operation.Onboarding.Clear();
-                Operation.Onboarding.Add("onboardingMethod","3");
-                Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                Operation.Onboarding = GetOnboarding(OnboardingActivation, ProvisionActivationCode);
                 var incorrectModel = false;
                 Operation.Callback = o =>
                 {
@@ -300,18 +450,18 @@ public partial class MainViewModel : WizardViewModelBase
                         Operation.Mode = "Provision:ActivationCode";
                         Operation.DisplayName = SearchSelection?.Name;
                         Operation.DisplayNumber = SearchSelection?.Number;
-                        result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, personId: SearchSelection.Id);
+                        result = await webexService.AddDeviceByActivationCode(orgId: Settings.User.Organization.Id, model: ProvisionModel, type: SearchSelection.Type, id: SearchSelection.Id);
                         if (!string.IsNullOrEmpty(result.Code))
                         {
                             ProvisionActivationCode = result.Code;
                             Operation.ActivationCode = ProvisionActivationCode;
-                            Operation.Onboarding.Add("onboardingMethod","3");
-                            Operation.Onboarding.Add("onboardingDetail", ProvisionActivationCode);
+                            Operation.Onboarding = GetOnboarding(OnboardingActivation, ProvisionActivationCode);
                             await deviceService.ScanPhoneAsync(Operation);
                         }
                         else
                         {
                             Operation.State = OperationState.Failure;
+                            Operation.Phone ??= new PhoneDetails();
                             Operation.Result = result.Error;
                         }
                     }
@@ -336,15 +486,17 @@ public partial class MainViewModel : WizardViewModelBase
             await deviceService.ScanPhoneAsync(Operation);
             if (Operation.State == OperationState.Success)
             {
-                var result = await webexService.AddDeviceByMac(orgId: Settings.User.Organization.Id,
+                var result = await webexService.AddDeviceByMac(
+                    orgId: Settings.User.Organization.Id,
                     mac: Operation.Phone.Mac,
                     model: Operation.Phone.Pid,
-                    personId: SearchSelection?.Type == "User" ? SearchSelection.Id : null,
-                    workspaceId: SearchSelection?.Type == "Workspace" ? SearchSelection.Id : null);
+                    type: SearchSelection?.Type,
+                    id: SearchSelection.Id);
                 if (result != null)
                 {
                     Operation.Result = result;
                     Operation.State = OperationState.Failure;
+                    Operation.Phone ??= new PhoneDetails();
                     appViewModel.Title = "Provision";
                 }
                 else appViewModel.Title = "Provisioned";

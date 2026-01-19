@@ -26,6 +26,7 @@
             <converters:StringMapperConverter x:Key="NextStringConverter" DefaultValue="Scan"/>
             <converters:StringMapperConverter x:Key="NextImageConverter" DefaultValue="nfc_icon.png"/>
             <converters:StringMapperConverter x:Key="BackStringConverter" DefaultValue="Back"/>
+            <toolkit:BoolToObjectConverter x:Key="BoolToObjectConverter" TrueObject="True" FalseObject="False" />
             <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
             <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <toolkit:EnumToBoolConverter x:Key="OperationIdleConverter">
@@ -56,6 +57,7 @@
         </Style>
         <Style TargetType="RadioButton">
             <Setter Property="ControlTemplate" Value="{StaticResource SecondaryToggleRadioButtonTemplate}"/>
+            <Setter Property="FontAttributes" Value="Bold" />
         </Style>
     </shared:StepContentPage.Resources>
     <ContentPage.Content>
@@ -72,7 +74,7 @@
                         <Label Text="{Binding SearchSelection.Number}"></Label>
                     </HorizontalStackLayout>
                     <HorizontalStackLayout IsVisible="{Binding SearchSelection.Number, Converter={StaticResource IsNotNullConverter}}">
-                        <Label Text="Mode: " VerticalTextAlignment="Center" ></Label>
+                        <Label Text="Mode: " VerticalTextAlignment="Center"></Label>
                         <Border StrokeShape="RoundRectangle 10" Stroke="Black">
                             <HorizontalStackLayout IsEnabled="{Binding Operation.State, Converter={StaticResource OperationIdleConverter}}">
                                 <RadioButton Content="MAC" FontSize="20" IsChecked="{Binding IsModelSelected, Converter={StaticResource InvertedBoolConverter}}"/>
@@ -91,12 +93,31 @@
                         <Picker Title="Select Model" MaximumHeightRequest="{OnPlatform iOS=30, Android=44}" MinimumWidthRequest="150" FontSize="20" FontAttributes="Italic" ItemsSource="{Binding Models}" SelectedItem="{Binding ProvisionModel, Mode=TwoWay}" IsEnabled="{Binding Operation.State, Converter={StaticResource OperationIdleConverter}}">
                         </Picker>
                     </HorizontalStackLayout>
+                    <HorizontalStackLayout
+                        IsVisible="{Binding WifiCanInclude}"
+                        RadioButtonGroup.SelectedValue="{Binding WifiInclude, Mode=TwoWay, Converter={StaticResource BoolToObjectConverter}}"
+                        RadioButtonGroup.GroupName="WifiInclude">
+                        <Label Text="Save WiFi: " VerticalTextAlignment="Center"></Label>
+                        <Border StrokeShape="RoundRectangle 10" Stroke="Black">
+                            <HorizontalStackLayout>
+                                <RadioButton Value="True" Content="Yes" FontSize="20" />
+                                <RadioButton Value="False" Content="No" FontSize="20" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </HorizontalStackLayout>
                     <HorizontalStackLayout IsVisible="{Binding IsCodeVisible}">
                         <Label Text="Code: " VerticalTextAlignment="Center"></Label>
                         <Label Text="{Binding ProvisionActivationCode, Converter={StaticResource CodeFormatter}}" VerticalTextAlignment="Center"></Label>
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Border>
+            <HorizontalStackLayout Grid.Row="2" HorizontalOptions="Center" IsVisible="{Binding CanSignError, Converter={StaticResource IsNotNullConverter}}">
+                <Label TextColor="Red" StyleClass="Subheading" Text="{Binding CanSignError, StringFormat='CDA Service: {0}'}"></Label>
+            </HorizontalStackLayout>
+            <ActivityIndicator Grid.Row="2" Scale="{OnPlatform 1.0, iOS=2.0}"
+                               IsVisible="{Binding CdaCheckBusy}"
+                               IsRunning="{Binding CdaCheckBusy}"></ActivityIndicator>
+            
             <ActivityIndicator Grid.Row="2" Scale="{OnPlatform 1.0, iOS=2.0}"
                                IsVisible="{Binding Operation.State, Converter={StaticResource OperationInProgressConverter}}"
                                IsRunning="{Binding Operation.State, Converter={StaticResource OperationInProgressConverter}}"></ActivityIndicator>

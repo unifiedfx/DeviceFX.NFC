@@ -59,7 +59,9 @@ public partial class PhoneDetails : ObservableObject
     private string? country;
     [ObservableProperty]
     private DateTime updated = DateTime.UtcNow;
-
+    [ObservableProperty]
+    private bool requiresSigning;
+    
     // [ObservableProperty]
     public string Image =>
         Pid switch
@@ -115,12 +117,13 @@ public partial class PhoneDetails : ObservableObject
         }
         return Url = template;
     }    
-    public byte[]? Encrypt(string inputText)
+    public byte[]? Encrypt(string inputText) => Encrypt(Encoding.UTF8.GetBytes(inputText));
+
+    public byte[]? Encrypt(byte[] inputBytes)
     {
         if (Certificate == null || Certificate.Length == 0) return null;
         try
         {
-            byte[] inputBytes = Encoding.UTF8.GetBytes(inputText);
             X509Certificate cert = new X509Certificate(Certificate);
             // Create CMS enveloped data generator
             CmsEnvelopedDataGenerator envelopedGen = new CmsEnvelopedDataGenerator();
@@ -151,14 +154,20 @@ public partial class PhoneDetails : ObservableObject
         var dict = new Dictionary<string,string>(config, StringComparer.OrdinalIgnoreCase);
         if(dict.Count == 0) return null;
         var onboardingMethod = 0;
-        if (dict.TryGetValue("onboardingMethod", out var onboardingMethodValue))
+        if (dict.TryGetValue(Operation.OnboardingMethod, out var onboardingMethodValue))
         {
             onboardingMethod = int.TryParse(onboardingMethodValue, out var method)
                 ? method
                 : 2;            
         }
-        dict.TryGetValue("onboardingDetail", out var onboardingDetail);
+        dict.TryGetValue(Operation.OnboardingDetail, out var onboardingDetail);
         if(onboardingMethod is 1 or 3 or 5 && onboardingDetail is null) throw new ArgumentOutOfRangeException(nameof(config), $"Onboarding method {onboardingMethod} requires onboardingDetail.");
+        if(onboardingMethod is 1 or 5) RequiresSigning = true;
+        else
+        {
+            var ignoreCount = dict.Count(d => d.Key is Operation.OnboardingMethod or Operation.OnboardingDetail);
+            RequiresSigning = dict.Count > ignoreCount;
+        }
         return json ? GetJsonConfig() : GetTextConfig();
         
         string GetTextConfig()
@@ -174,11 +183,11 @@ public partial class PhoneDetails : ObservableObject
             {
                 { "mac", Mac.ToUpperInvariant() }
             };
-            if (onboardingMethod > 0) json.Add("onboardingMethod", onboardingMethod);
-            if (onboardingDetail is not null) json.Add("onboardingDetail", onboardingDetail);
-            dict.Remove("onboardingMethod");
-            dict.Remove("onboardingDetail");
-            if(dict.Count > 0) json["onboardingConfig"] = dict;
+            if (onboardingMethod > 0) json.Add(Operation.OnboardingMethod, onboardingMethod);
+            if (onboardingDetail is not null) json.Add(Operation.OnboardingDetail, onboardingDetail);
+            dict.Remove(Operation.OnboardingMethod);
+            dict.Remove(Operation.OnboardingDetail);
+            if(dict.Count > 0) json[Operation.OnboardingConfig] = dict;
             return System.Text.Json.JsonSerializer.Serialize(json);
         }
     }

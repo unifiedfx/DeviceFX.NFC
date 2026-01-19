@@ -134,30 +134,15 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                 await SetResult($"{operation.Phone.Pid} details read", true, cancellationToken: cancellationToken);
                 return null;
             }
-            string? config = null;
             try
             {
-                config = operation.Phone.CreateConfig(operation.Onboarding);
+                var configRecords = await operation.GetConfig();
+                if(configRecords != null) records.AddRange(configRecords);
+                alertMessage(operation.Phone.RequiresSigning ? "Writing Signed Onboarding Details" : "Writing Encrypted Onboarding Details");
             }
             catch (Exception e)
             {
                 logger.LogError(e, "Config Error");
-            }
-            if(config != null)
-            {
-                var payload = operation.Phone.Encrypt(config);
-                if (payload != null)
-                {
-                    logger.LogDebug("Writing Encrypted Onboarding Details");
-                    alertMessage("Writing Encrypted Onboarding Details");
-                    records.Add(new MimeNdefRecord("application/x-phoneos-encrypt", payload));
-                }
-                else
-                {
-                    logger.LogDebug("Writing Onboarding Details");
-                    alertMessage("Writing Onboarding Details");
-                    records.Add(new TextNdefRecord(config));
-                }
             }
             messages.Add(new NdefMessage(records));
             messages.Add(new NdefMessage([]) {IsMessage = false});
@@ -166,6 +151,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             if (cancellationToken.IsCancellationRequested) return null;
             await stream.WriteNdefMessagesAsync(messages, cancellationToken: cancellationToken);
             logger.LogDebug("NDEF Message Saved: {Count}", messages.Count);
+            operation.ResetSignature();
             await SetResult($"Saved to {operation.Phone.Pid}", true, cancellationToken: cancellationToken);
             return null;
         }

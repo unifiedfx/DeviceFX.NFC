@@ -9,7 +9,7 @@ public interface IWebexService
     Task LogoutAsync();
     Task<bool> UpdateUser(UserProfile user, string? orgId = null, bool retryLogin = false);
     Task UpdateOrganization(UserProfile user, string? orgId = null);
-    Task<string?> AddDeviceByMac(string orgId, string mac, string model, string? personId = null, string? workspaceId = null);
+    Task<string?> AddDeviceByMac(string orgId, string mac, string model, string type, string? id = null);
     Func<Task<bool>>? RetryLogin { get; set; }
-    Task<WebexService.ActivationResult> AddDeviceByActivationCode(string orgId, string model, string? personId = null, string? workspaceId = null);
+    Task<WebexService.ActivationResult> AddDeviceByActivationCode(string orgId, string model, string type, string? id = null);
 }
