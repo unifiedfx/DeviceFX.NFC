@@ -196,9 +196,8 @@ public partial class MainViewModel : WizardViewModelBase
         var onboarding = GetOnboarding(mode);
         var requiresSigning = RequiresSigning(onboarding);
         if(!requiresSigning) return true;
-        if (canSignData.HasValue) return canSignData.Value;
         string? error = null;
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         try
         {
             CdaCheckBusy = true;

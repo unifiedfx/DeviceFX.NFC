@@ -66,7 +66,7 @@
                 <shared:WifiSettingsView></shared:WifiSettingsView>
             </Border>
             <HorizontalStackLayout Grid.Row="2" HorizontalOptions="Center" IsVisible="{Binding CanSignError, Converter={StaticResource IsNotNullConverter}}">
-                <Label TextColor="Red" StyleClass="Subheading" Text="{Binding CanSignError, StringFormat='CDA Service: {0}'}"></Label>
+                <Label TextColor="Red" StyleClass="Subheading" LineBreakMode="WordWrap" MaxLines="3" WidthRequest="300" Text="{Binding CanSignError, StringFormat='CDA Service: {0}'}"></Label>
             </HorizontalStackLayout>
             <ActivityIndicator Grid.Row="2" Scale="{OnPlatform 1.0, iOS=2.0}"
                                IsVisible="{Binding CdaCheckBusy}"

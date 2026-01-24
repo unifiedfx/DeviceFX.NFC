@@ -48,7 +48,6 @@ public class AndroidAttestationService(Settings settings) : IAttestationService
                 .SetNonce(challenge)
                 .Build();
 
-            // var integrityTokenResponse = integrityManager.RequestIntegrityToken(requestBuilder).GetAwaiter().GetResult() as IntegrityTokenResponse;
             var integrityTokenResponse = await integrityManager.RequestIntegrityToken(requestBuilder).ToAwaitableTask() as IntegrityTokenResponse;
             var integrityToken = integrityTokenResponse?.Token();
 
@@ -61,9 +60,8 @@ public class AndroidAttestationService(Settings settings) : IAttestationService
                     deviceId = Android.Provider.Settings.Secure.GetString(context.ContentResolver, Android.Provider.Settings.Secure.AndroidId)
                 }, cancellationToken: cancellationToken);
 
-            tokenResponse = response.IsSuccessStatusCode ?
-                await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken) :
-                new TokenResponse(false, "Failed to obtain token");
+            tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken) 
+                            ?? new TokenResponse(false, "Failed to obtain token");
         }
         catch (Exception ex)
         {

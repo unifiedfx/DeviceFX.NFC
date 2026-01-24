@@ -35,30 +35,36 @@ public class iOSAttestationService(Settings settings) : IAttestationService
     {
         var httpClient = new HttpClient();
         httpClient.BaseAddress = new Uri(settings.Webex.CdaServiceUrl);
-        var challengeResult = await httpClient.GetFromJsonAsync<JsonElement>("api/mobile/attestChallenge", cancellationToken: cancellationToken);
-        string? challenge = challengeResult.TryGetProperty("challenge", out var challengeJson) && challengeJson.ValueKind == JsonValueKind.String ? challengeJson.GetString() : null;
-        if (challenge == null)
+        try
         {
-            tokenResponse = new TokenResponse(false, "Failed to obtain challenge");
-            return;
-        }
-        var service = DCAppAttestService.SharedService;
-        var keyId = await service.GenerateKeyAsync();
-        var clientDataHash = SHA256.HashData(Encoding.UTF8.GetBytes(challenge));
-        var attestation = await service.AttestKeyAsync(keyId, NSData.FromArray(clientDataHash));
-        var attestationToken = Convert.ToBase64String(attestation.ToArray());
-        var response = await httpClient.PostAsJsonAsync(
-            "api/mobile/attest",
-            new
+            var challengeResult = await httpClient.GetFromJsonAsync<JsonElement>("api/mobile/attestChallenge", cancellationToken: cancellationToken);
+            string? challenge = challengeResult.TryGetProperty("challenge", out var challengeJson) && challengeJson.ValueKind == JsonValueKind.String ? challengeJson.GetString() : null;
+            if (challenge == null)
             {
-                platform = "Apple",
-                attestationToken,
-                keyId,
-                deviceId = UIDevice.CurrentDevice.IdentifierForVendor?.AsString()
-            }, cancellationToken: cancellationToken);
-        tokenResponse = response.IsSuccessStatusCode ? 
-            await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken) :  
-            new TokenResponse(false, "Failed to obtain token");
+                tokenResponse = new TokenResponse(false, "Failed to obtain challenge");
+                return;
+            }
+            var service = DCAppAttestService.SharedService;
+            var keyId = await service.GenerateKeyAsync();
+            var clientDataHash = SHA256.HashData(Encoding.UTF8.GetBytes(challenge));
+            var attestation = await service.AttestKeyAsync(keyId, NSData.FromArray(clientDataHash));
+            var attestationToken = Convert.ToBase64String(attestation.ToArray());
+            var response = await httpClient.PostAsJsonAsync(
+                "api/mobile/attest",
+                new
+                {
+                    platform = "Apple",
+                    attestationToken,
+                    keyId,
+                    deviceId = UIDevice.CurrentDevice.IdentifierForVendor?.AsString()
+                }, cancellationToken: cancellationToken);
+            tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: cancellationToken) 
+                            ?? new TokenResponse(false, "Failed to obtain token");
+        }
+        catch (Exception ex)
+        {
+            tokenResponse = new TokenResponse(false, $"Attestation error: {ex.Message}");
+        }
     }
 
     private record TokenResponse(bool Success, string? Error = null, string? Token = null, int? ExpiresIn = null)
