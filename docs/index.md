@@ -14,13 +14,17 @@ For more information on the Cisco Desk Phone 9800 Series NFC capabilities and ho
 
 This provides a simple way to provision Cisco Desk Phone 9800 Series IP Phones to Webex Calling by searching for a user or workspace, scanning the phone NFC tag and then provisioning the phone to Webex via the Webex API.
 
-## Save Onboarding Mode
+## Save Onboarding Configuration
 
-The onboarding mode of the phone can be set to one of the following modes:
+The onboarding configuration of the phone can include the following:
 
+* WiFi Settings
 * Activation Code
-* Cloud Priority
-* CUCM Priority
+* Non-Webex Cloud registration
+* CUCM TFTP Server
+
+For simplicity, when enabling end users or local IT staff to deploy Cisco Desk Phone 9800 Series IP Phones without having to login to Webex the DeviceFX NFC mobile application supports deep-linking.
+Visit the [Onboarding](/onboarding) page to compose and preview a deep link url for the onboarding configuration.
 
 ### Activation Code
 Enter and save an Activation Code to the phone NFC tag. This code can then be used to register the phone with a calling service.

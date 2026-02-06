@@ -1,0 +1,342 @@
+---
+layout: default          # Uses the _layouts/default.html layout file (if it exists)
+title: Onboarding Configuration   # Becomes available as {{ page.title }}
+description: Compose a Deep Link Url.
+permalink: /onboarding       # Optional: makes the URL clean (/about/ instead of /about.html)
+show_footer: true        # Example custom variable you can use in Liquid
+nav: true
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+
+    <style>
+        /* Minimal overrides to support tabs, form layout, and disabled state while respecting Cayman theme */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e6e6e6;
+            margin-bottom: 1.5rem;
+        }
+        .tab {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: #606c71;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: #1e6bb8;
+            border-bottom: 3px solid #1e6bb8;
+            font-weight: 600;
+        }
+        .tab:hover {
+            color: #1e6bb8;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        .field {
+            margin-bottom: 1.25rem;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #494949;
+        }
+        .field input {
+            width: 350px;
+        }
+        .wifi-section {
+            border-top: 1px solid #e6e6e6;
+            padding-top: 1.5rem;
+            margin-top: 2rem;
+        }
+        .wifi-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .url-container {
+            margin-top: 2.5rem;
+            padding: 1.25rem;
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+        }
+        #full-url {
+            width: 100%;
+            padding: 0.75rem;
+            font-family: Menlo, Monaco, "Courier New", monospace;
+            background: white;
+            border: 1px solid #d1d5da;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<main class="page-content" aria-label="Content">
+    <div class="wrapper">
+
+        <article class="post">
+
+            <header class="post-header">
+                <h1 class="post-title">Device Onboarding Configuration</h1>
+            </header>
+
+            <div class="post-content">
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab" data-tab="cloud">Cloud</button>
+                    <button class="tab" data-tab="cucm">CUCM</button>
+                    <button class="tab active" data-tab="activation">Activation</button>
+                </div>
+
+                <!-- Cloud Tab -->
+                <div class="tab-content" id="cloud-tab">
+                    <div class="form-section">
+                        <p>Configure the phone to register with an alternate cloud calling platform such as Cisco Broadworks.</p>
+                        <div class="field">
+                            <label for="cloud-profile">Profile URL</label>
+                            <input type="url" id="cloud-profile" placeholder="https://example.com/profile.xml">
+                        </div>
+                        <div class="field">
+                            <label for="cloud-ca-rule">Custom CA Rule</label>
+                            <input type="text" id="cloud-ca-rule" placeholder="Custom CA rule url">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CUCM Tab -->
+                <div class="tab-content" id="cucm-tab">
+                    <div class="form-section">
+                        <p>Configure the phone to register with Cisco Unified Communicaiton Manger (CUCM) using the specified TFTP Server.</p>
+                        <div class="field">
+                            <label for="cucm-server">CUCM Server</label>
+                            <input type="text" id="cucm-server" placeholder="CUCM TFTP Server">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activation Tab -->
+                <div class="tab-content active" id="activation-tab">
+                    <div class="form-section">
+                        <p>Set the phone to directly register to Webex Calling using the entered Activation Code.</p>
+                        <div class="field">
+                            <label for="activation-code">Activation Code</label>
+                            <input type="text" id="activation-code" placeholder="1111-2222-3333-4444">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Common WiFi Section -->
+                <div class="wifi-section" id="wifi-section">
+                    <h3>WiFi Settings</h3>
+                    <p>Set the phone WiFi configuration to eliminate the need to enter the WiFi details directly on each handset.</p>
+                    <div class="field">
+                        <label for="wifi-include">Include WiFi</label>
+                        <select id="wifi-include">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+
+                    <div class="wifi-fields">
+                        <div class="field">
+                            <label for="wifi-security-mode">Security Mode</label>
+                            <select id="wifi-security-mode">
+                                <option value="PSK">PSK</option>
+                                <option value="Auto">Auto</option>
+                                <option value="EAP-FAST">EAP-FAST</option>
+                                <option value="EAP-PEAP">EAP-PEAP</option>
+                                <option value="None">None</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="wifi-name">Name (SSID)</label>
+                            <input type="text" id="wifi-name" placeholder="WiFi Name">
+                        </div>
+
+                        <div class="field">
+                            <label for="wifi-user">Username</label>
+                            <input type="text" id="wifi-user" placeholder="WiFi Username">
+                        </div>
+
+                        <div class="field">
+                            <label for="wifi-password">Password</label>
+                            <input type="password" id="wifi-password">
+                        </div>
+
+                        <div class="field">
+                            <label for="wifi-band">Band</label>
+                            <select id="wifi-band">
+                                <option value="auto">Auto</option>
+                                <option value="2.4">2.4 GHz</option>
+                                <option value="5">5 GHz</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Copyable URL -->
+                <div class="url-container">
+                    <label for="full-url">DeviceFX NFC Deep Link URL</label>
+                    <input type="text" id="full-url" readonly>
+                    <button class="btn btn-primary" style="background: darkcyan" id="copy-button">Copy URL</button>
+                    <p>This link will automatically install and open the DeviceFX NFC Mobile application and populate the provided parameters. This is ideal to share with end users or local IT staff so they can deploy Cisco Desk Phone 9800 Series with just a tap.</p>
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+</main>
+
+<script>
+    // Tab functionality
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            tabContents.forEach(c => c.classList.remove('active'));
+            document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+        });
+    });
+
+    // WiFi enable/disable logic
+    const wifiIncludeSelect = document.getElementById('wifi-include');
+    const wifiFields = document.querySelector('.wifi-fields');
+    const wifiSection = document.getElementById('wifi-section');
+
+    function toggleWifiFields() {
+        const shouldEnable = wifiIncludeSelect.value === 'true';
+        if (shouldEnable) {
+            wifiFields.classList.remove('wifi-disabled');
+            wifiFields.querySelectorAll('input, select').forEach(el => {
+                el.disabled = false;
+            });
+        } else {
+            wifiFields.classList.add('wifi-disabled');
+            wifiFields.querySelectorAll('input, select').forEach(el => {
+                el.disabled = true;
+            });
+        }
+        updateUrl(); // Ensure URL reflects current state
+    }
+
+    wifiIncludeSelect.addEventListener('change', toggleWifiFields);
+
+    // Query param sync
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            'cloud-profile': params.get('cloud-profile') || '',
+            'cloud-ca-rule': params.get('cloud-ca-rule') || '',
+            'cucm-server': params.get('cucm-server') || '',
+            'activation-code': params.get('activation-code') || '',
+            'wifi-security-mode': params.get('wifi-security-mode') || 'PSK',
+            'wifi-name': params.get('wifi-name') || '',
+            'wifi-password': params.get('wifi-password') || '',
+            'wifi-include': params.get('wifi-include') || 'false',
+            'wifi-band': params.get('wifi-band') || 'auto'
+        };
+    }
+
+    function populateForm() {
+        const p = getQueryParams();
+        document.getElementById('cloud-profile').value = p['cloud-profile'];
+        document.getElementById('cloud-ca-rule').value = p['cloud-ca-rule'];
+        document.getElementById('cucm-server').value = p['cucm-server'];
+        document.getElementById('activation-code').value = p['activation-code'];
+        document.getElementById('wifi-security-mode').value = p['wifi-security-mode'];
+        document.getElementById('wifi-name').value = p['wifi-name'];
+        document.getElementById('wifi-password').value = p['wifi-password'];
+        document.getElementById('wifi-include').value = p['wifi-include'];
+        document.getElementById('wifi-band').value = p['wifi-band'];
+        toggleWifiFields(); // Apply disable/enable on load
+        updateFullUrl();
+    }
+
+    function updateUrl() {
+        const params = new URLSearchParams();
+
+        const vals = {
+            'cloud-profile': document.getElementById('cloud-profile').value.trim(),
+            'cloud-ca-rule': document.getElementById('cloud-ca-rule').value.trim(),
+            'cucm-server': document.getElementById('cucm-server').value.trim(),
+            'activation-code': document.getElementById('activation-code').value.trim(),
+            'wifi-security-mode': document.getElementById('wifi-security-mode').value.trim(),
+            'wifi-name': document.getElementById('wifi-name').value.trim(),
+            'wifi-password': document.getElementById('wifi-password').value.trim(),
+            'wifi-include': document.getElementById('wifi-include').value,
+            'wifi-band': document.getElementById('wifi-band').value
+        };
+
+        Object.entries(vals).forEach(([k, v]) => {
+            if (v && (k !== 'wifi-security-mode' && k !== 'wifi-name' && k !== 'wifi-password' && k !== 'wifi-band' && k !== 'wifi-include' || vals['wifi-include'] === 'true')) {
+                params.set(k, v);
+            }
+        });
+
+        // If wifi-include is 'no', we can still include it (useful to explicitly say no WiFi)
+        // but omit the WiFi-specific fields
+        const newUrl = `${window.location.origin}${window.location.pathname}?${params}`;
+        history.replaceState(null, '', newUrl);
+        updateFullUrl();
+    }
+
+    function updateFullUrl() {
+        document.getElementById('full-url').value = window.location.href;
+    }
+
+    // Event listeners for all inputs
+    const inputIds = [
+        'cloud-profile', 'cloud-ca-rule', 'cucm-server', 'activation-code',
+        'wifi-security-mode', 'wifi-name', 'wifi-password', 'wifi-include', 'wifi-band'
+    ];
+
+    inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', updateUrl);
+            } else {
+                el.addEventListener('input', updateUrl);
+            }
+        }
+    });
+
+    // Copy button
+    document.getElementById('copy-button').addEventListener('click', () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('Deep Link URL copied to clipboard!');
+        }).catch(() => alert('Failed to copy'));
+    });
+
+    // Initialize
+    populateForm();
+    window.addEventListener('popstate', populateForm);
+</script>
+</body>
+</html>
