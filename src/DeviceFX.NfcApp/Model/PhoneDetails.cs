@@ -30,6 +30,10 @@ public partial class PhoneDetails : ObservableObject
     [ObservableProperty]
     public string? activationCode;
     [ObservableProperty]
+    public string? organization;
+    [ObservableProperty]
+    public string? wifiName;
+    [ObservableProperty]
     public string? displayName;
     [ObservableProperty]
     public string? displayNumber;
@@ -93,6 +97,8 @@ public partial class PhoneDetails : ObservableObject
     {
         Mode = operation.Mode;
         ActivationCode = operation.ActivationCode;
+        Organization = operation.Organization;
+        WifiName = operation.WifiName;
         DisplayName = operation.DisplayName;
         DisplayNumber = operation.DisplayNumber;
     }

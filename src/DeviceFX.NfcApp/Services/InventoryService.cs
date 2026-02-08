@@ -27,8 +27,15 @@ public class InventoryService : IInventoryService
             {
                 phone.Mode ??= existing.Mode;
                 phone.ActivationCode ??= existing.ActivationCode;
+                phone.Organization ??= existing.Organization;
                 phone.DisplayName ??= existing.DisplayName;
                 phone.DisplayNumber ??= existing.DisplayNumber;
+                phone.WifiName ??= existing.WifiName;
+                phone.Longitude ??= existing.Longitude;
+                phone.Latitude ??= existing.Latitude;
+                phone.Postcode ??= existing.Postcode;
+                phone.Country ??= existing.Country;
+                phone.AssetTag ??= existing.AssetTag;
             }
         }
         await database.InsertOrReplaceAsync(phone);

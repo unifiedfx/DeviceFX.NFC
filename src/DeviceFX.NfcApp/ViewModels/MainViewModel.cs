@@ -24,6 +24,7 @@ public partial class MainViewModel : WizardViewModelBase
     private readonly IInventoryService inventoryService;
     private readonly IPopupService popupService;
     private readonly CdaService cdaService;
+    private readonly IPrintManager printManager;
 
     public const string OnboardingCloud = "Cloud";
     public const string OnboardingActivation = "Activation";
@@ -43,7 +44,8 @@ public partial class MainViewModel : WizardViewModelBase
         IInventoryService inventoryService,
         IPopupService popupService,
         CdaService cdaService,
-        IMessenger messenger) : base(steps)
+        IMessenger messenger,
+        IPrintManager printManager) : base(steps)
     {
         this.appViewModel = appViewModel;
         this.settingsViewModel = settingsViewModel;
@@ -54,6 +56,7 @@ public partial class MainViewModel : WizardViewModelBase
         this.inventoryService = inventoryService;
         this.popupService = popupService;
         this.cdaService = cdaService;
+        this.printManager = printManager;
         messenger.Register<OrganizationMessage>(this, async (recipient, message) =>
         {
             SearchResults.Clear();
@@ -86,6 +89,10 @@ public partial class MainViewModel : WizardViewModelBase
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
     [Preference<string>("onboarding-mode", OnboardingCloud)]
     private string onboardingMode = OnboardingCloud;
+    
+    [ObservableProperty]
+    [Preference<string>("asset-tag")]
+    private string? assetTag;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
@@ -174,7 +181,9 @@ public partial class MainViewModel : WizardViewModelBase
         Operation.Reset();
         Operation.Onboarding = GetOnboarding(OnboardingMode, ActivationCode);
         if (OnboardingMode == OnboardingActivation) Operation.ActivationCode = ActivationCode;
-        Operation.Merge = true;
+        Operation.Organization = Settings.User.Organization?.Name;
+        if (WifiInclude) Operation.WifiName = WifiName;
+        Operation.AssetTag = AssetTag;
         Operation.Mode = $"Onboarding:{OnboardingMode}";
         await deviceService.ScanPhoneAsync(Operation);
     }
@@ -271,7 +280,6 @@ public partial class MainViewModel : WizardViewModelBase
         return true;
     }
     
-
     #endregion
 
     #region Search
@@ -425,6 +433,9 @@ public partial class MainViewModel : WizardViewModelBase
             {
                 ProvisionActivationCode = result.Code;
                 Operation.ActivationCode = ProvisionActivationCode;
+                Operation.Organization = Settings.User.Organization?.Name;
+                Operation.AssetTag = AssetTag;
+                if (WifiInclude) Operation.WifiName = WifiName;
                 Operation.Onboarding = GetOnboarding(OnboardingActivation, ProvisionActivationCode);
                 var incorrectModel = false;
                 Operation.Callback = o =>
@@ -445,6 +456,9 @@ public partial class MainViewModel : WizardViewModelBase
                     {
                         ProvisionModel = Operation.Phone.Pid;
                         Operation.Reset();
+                        Operation.Organization = Settings.User.Organization?.Name;
+                        Operation.AssetTag = AssetTag;
+                        if (WifiInclude) Operation.WifiName = WifiName;
                         Operation.State = OperationState.InProgress;
                         Operation.Mode = "Provision:ActivationCode";
                         Operation.DisplayName = SearchSelection?.Name;
@@ -482,6 +496,9 @@ public partial class MainViewModel : WizardViewModelBase
             Operation.Mode = "Provision:MacAddress";
             Operation.DisplayName = SearchSelection?.Name;
             Operation.DisplayNumber = SearchSelection?.Number;
+            Operation.Organization = Settings.User.Organization?.Name;
+            Operation.AssetTag = AssetTag;
+            if (WifiInclude) Operation.WifiName = WifiName;
             await deviceService.ScanPhoneAsync(Operation);
             if (Operation.State == OperationState.Success)
             {
@@ -505,6 +522,10 @@ public partial class MainViewModel : WizardViewModelBase
                 appViewModel.Title = "Provision";
             }
         }
+
+        if (Operation.State == OperationState.Success
+            && !string.IsNullOrWhiteSpace(Operation.Phone?.DisplayName)
+            && !string.IsNullOrWhiteSpace(Operation.Phone?.DisplayNumber)) await PrintAsync(Operation.Phone);
     }
 
     [RelayCommand]
@@ -529,6 +550,7 @@ public partial class MainViewModel : WizardViewModelBase
     public async Task LoadPhonesAsync()
     {
         PhoneList = new ObservableCollection<PhoneDetails>(await inventoryService.GetPhonesAsync());
+        CanPrint = Settings.PrinterEnabled && await printManager.CanPrintAsync();
     }
     
     [RelayCommand]
@@ -539,6 +561,8 @@ public partial class MainViewModel : WizardViewModelBase
             Operation.Reset();
             Operation.Mode = "Inventory";
             Operation.Merge = true;
+            Operation.AssetTag = AssetTag;
+            Operation.Organization = Settings.User.Organization?.Name;
             if (long.TryParse(Settings.AutoNumber, out var autoNumber))
             {
                 Operation.DisplayNumber = autoNumber.ToString();
@@ -550,6 +574,7 @@ public partial class MainViewModel : WizardViewModelBase
             {
                 Settings.AutoNumber = autoNumber.ToString();
                 await Settings.SaveAsync(nameof(Settings.AutoNumber));
+                await PrintAsync(Operation.Phone);
             }
             await LoadPhonesAsync();
         }
@@ -607,6 +632,7 @@ public partial class MainViewModel : WizardViewModelBase
         {
             return;
         }
+        CanPrint = Settings.PrinterEnabled && await printManager.CanPrintAsync();
         if(Settings.User.IsLoggedIn) await NextAsync(page);
     }
     [RelayCommand]
@@ -617,7 +643,53 @@ public partial class MainViewModel : WizardViewModelBase
             SearchInput = String.Empty;
             await this.RemoveAsync("SearchInput");
         }
+        CanPrint = Settings.PrinterEnabled && await printManager.CanPrintAsync();
         await NextAsync(page);
     }
+    #endregion
+    
+    #region Print
+
+    [ObservableProperty] private bool canPrint;
+    
+    partial void OnSelectedPhoneChanged(PhoneDetails? value)
+    {
+        (PrintCommand as AsyncRelayCommand<PhoneDetails?>)?.NotifyCanExecuteChanged();
+    }
+
+    public bool CanExecutePrint()
+    {
+        if(!CanPrint) return false;
+        if (!string.IsNullOrWhiteSpace(SelectedPhone?.AssetTag)) return true;
+        if (!string.IsNullOrWhiteSpace(SelectedPhone?.DisplayNumber)) return true;
+        if (string.IsNullOrWhiteSpace(SelectedPhone?.DisplayName)) return false;
+        return true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExecutePrint))]
+    public async Task PrintAsync(PhoneDetails? phone = null)
+    {
+        if(phone == null || !CanPrint) return;
+        List<string> rows = [];
+        if(!string.IsNullOrWhiteSpace(Settings.User.Organization?.Name)) rows.Add("Org: " + Settings.User.Organization.Name);
+        if(!string.IsNullOrWhiteSpace(phone.DisplayName)) rows.Add("Name: " + phone.DisplayName);
+        if(!string.IsNullOrWhiteSpace(phone.DisplayNumber)) rows.Add("Number: " + phone.DisplayNumber);
+        if(!string.IsNullOrWhiteSpace(phone.AssetTag)) rows.Add("Tag: " + phone.AssetTag);
+        if(!string.IsNullOrWhiteSpace(phone.Pid)) rows.Add("Product: " + phone.Pid);
+        if(!string.IsNullOrWhiteSpace(phone.Serial)) rows.Add("Serial #: " + phone.Serial);
+        if(!string.IsNullOrWhiteSpace(phone.Mac)) rows.Add("MAC: " + phone.Mac);
+        if (!string.IsNullOrWhiteSpace(phone.WifiMac))
+        {
+            rows.Add("WIFI MAC: " + phone.WifiMac);
+            if(WifiInclude && !string.IsNullOrWhiteSpace(WifiName)) rows.Add("SSID: " + WifiName);
+        }
+        rows.Add("Issued: " + phone.Updated.ToString("yyyy-MM-dd"));
+        if (!string.IsNullOrWhiteSpace(phone.ActivationCode))
+        {
+            rows.Add("Expires: " + phone.Updated.AddDays(30).ToString("yyyy-MM-dd"));
+        }
+        await printManager.PrintAsync(rows);
+    }
+    
     #endregion
 }

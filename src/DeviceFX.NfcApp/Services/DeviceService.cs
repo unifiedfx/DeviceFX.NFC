@@ -168,7 +168,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
                     operation.Phone.Country = location.address?.country;
                 }
                 if(!string.IsNullOrWhiteSpace(settings.AssetTag))
-                    operation.Phone.AssetTag = settings.AssetTag;
+                    operation.Phone.AssetTag = operation.AssetTag ?? settings.AssetTag;
                 await inventoryService.AddPhoneAsync(operation.Phone, operation.Merge);
             }
             operation.Result = message;

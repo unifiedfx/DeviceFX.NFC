@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+              xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
+              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+              xmlns:viewModels="clr-namespace:DeviceFX.NfcApp.ViewModels"
+              CanBeDismissedByTappingOutsideOfPopup="False"
+              x:DataType="viewModels:PrinterViewModel"
+              x:Name="This"
+              x:Class="DeviceFX.NfcApp.Views.Shared.PrinterPopup">
+    <toolkit:Popup.Resources>
+        <toolkit:IsNotNullConverter x:Key="IsNotNullConverter" />
+        <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </toolkit:Popup.Resources>
+    <Grid RowDefinitions="Auto, 200, 50" RowSpacing="10">
+        <Label Text="Printer Setup" FontSize="28" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center" Padding="0,0"/>
+        <StackLayout Grid.Row="1">
+            <StackLayout>
+                <Label Text="Host:" FontSize="18" VerticalOptions="Center" Padding="0,10,0,0"/>
+                <Entry x:Name="PrinterHostEntry" Text="{Binding Settings.PrinterHost}" Placeholder="Printer hostname or ip address"
+                       IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}">
+                    <Entry.Behaviors>
+                        <toolkit:EventToCommandBehavior EventName="TextChanged"
+                                                        Command="{Binding PrinterHostChangedCommand}"
+                                                        BindingContext="{Binding Path=BindingContext, Source={x:Reference This}, x:DataType=PopUp}"
+                                                        CommandParameter="{Binding Source={x:Reference PrinterHostEntry}, Path=Text}" />
+                    </Entry.Behaviors>
+                </Entry>
+            </StackLayout>
+            <shared:LabelCheckboxView LabelText="Enable Printer" 
+                                      IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                                      IsToggled="{Binding Settings.PrinterEnabled, Mode=TwoWay}" 
+                                      Command="{Binding PrinterChangedCommand}"></shared:LabelCheckboxView>
+            <Label Text="{Binding Settings.PrinterName, StringFormat='Model: {0}'}" 
+                   FontSize="20" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center" Padding="0,0"
+                   IsVisible="{Binding Settings.PrinterName, Converter={StaticResource IsNotNullConverter}}" />
+            <Label Text="{Binding Error}" TextColor="Red" FontSize="18" 
+                   IsVisible="{Binding Error, Converter={StaticResource IsNotNullConverter}}"></Label>
+            <Label Text="Connecting..." FontSize="18"
+                   IsVisible="{Binding IsBusy}"></Label>
+        </StackLayout>
+        <Button Grid.Row="2" Text="Close" Command="{Binding CloseCommand}" WidthRequest="120"></Button>
+    </Grid>
+</toolkit:Popup>

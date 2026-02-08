@@ -22,6 +22,18 @@ public partial class Settings : ObservableValidator
     [Preference<bool>("enable-debug")]
     private bool enableDebug;
     
+    [ObservableProperty]
+    [Preference<string>("printer-host")]
+    private string printerHost;
+    
+    [ObservableProperty]
+    [Preference<bool>("printer-enabled")]
+    private bool printerEnabled;
+    
+    [ObservableProperty]
+    [Preference<string>("printer-name")]
+    private string? printerName;
+    
     public Settings(IConfiguration configuration) => 
         Webex = configuration.GetSection("AppSettings").Get<WebexSettings>() ?? new WebexSettings();
 
