@@ -89,6 +89,8 @@ public static class MauiProgram
         var configuration = configBuilder.Build();
         builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
+        builder.Services.AddSingletonPopup<PrinterPopup, PrinterViewModel>();
+        builder.Services.AddSingleton<IPrintManager, PrintManager>();
         builder.Services.AddSingleton<CdaService>();
         builder.Services.AddSingleton<WebexService>();
         builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
@@ -104,6 +106,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<Operation>();
         builder.Services.AddSingleton<AppViewModel>();
         builder.Services.AddSingleton<SettingsViewModel>();
+        builder.Services.AddSingleton<PrinterViewModel>();
         builder.Services.AddSingleton<ShellTitleView>();
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddSingleton<IMessenger, WeakReferenceMessenger>();

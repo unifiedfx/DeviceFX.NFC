@@ -57,7 +57,6 @@ public partial class AppShell : Shell
             MainThread.BeginInvokeOnMainThread(async () =>
             {
                 await viewModel.LoadAsync();
-                viewModel.ApplyQuery(ParseQueryString(args.Current.Location.OriginalString));
             });
         }
     }
@@ -73,29 +72,6 @@ public partial class AppShell : Shell
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             if(Navigation.ModalStack.LastOrDefault() != page) await Navigation.PushModalAsync(page, true);
-            if (page.BindingContext is IQueryAttributable qt)
-            {
-                qt.ApplyQueryAttributes(ParseQueryString(args.Target.Location.OriginalString));
-            }
         });
-    }
-
-    private Dictionary<string, object> ParseQueryString(string query)
-    {
-        var queryParams = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
-        if (string.IsNullOrEmpty(query)) return queryParams;
-        var index = query.LastIndexOf('?') + 1;
-        var pairs = query[index..].Split('&');
-        foreach (var pair in pairs)
-        {
-            var keyValue = pair.Split('=');
-            if (keyValue.Length != 2) continue;
-            if (int.TryParse(keyValue[1], out var intResult)) queryParams[keyValue[0]] = intResult;
-            else if (double.TryParse(keyValue[1], out var doubleResult)) queryParams[keyValue[0]] = doubleResult;
-            else if (bool.TryParse(keyValue[1], out var boolResult)) queryParams[keyValue[0]] = boolResult;
-            else if (DateTime.TryParse(keyValue[1], out var dateTimeResult)) queryParams[keyValue[0]] = dateTimeResult;
-            else queryParams[keyValue[0]] = keyValue[1];
-        }
-        return queryParams;
     }
 }

@@ -17,6 +17,9 @@ public partial class Operation(CdaService cdaService) : OperationBase
     public bool Merge { get; set; }
     public string? Mode { get; set; }
     public string? ActivationCode { get; set; }
+    public string? Organization { get; set; }
+    public string? AssetTag { get; set; }
+    public string? WifiName { get; set; }
     public string? DisplayName { get; set; }
     public string? DisplayNumber { get; set; }
 
@@ -73,6 +76,9 @@ public partial class Operation(CdaService cdaService) : OperationBase
         Merge = false;
         Mode = null;
         ActivationCode = null;
+        Organization = null;
+        AssetTag = null;
+        WifiName = null;
         DisplayName = null;
         DisplayNumber = null;
         Result = null;

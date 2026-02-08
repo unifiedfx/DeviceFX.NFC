@@ -86,6 +86,8 @@ jobs:
             sudo xcode-select -s /Applications/Xcode_$(XcodeVersion).app
             xcrun xcode-select --print-path
             xcodebuild -version
+            echo Available simulators:
+            xcrun simctl runtime list
 
       - task: Bash@3
         displayName: Install iOS Platform

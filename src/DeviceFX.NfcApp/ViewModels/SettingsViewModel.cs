@@ -1,3 +1,4 @@
+using CommunityToolkit.Maui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger, ILogger<SettingsViewModel> logger) : ObservableValidator, IQueryAttributable
+public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger, IPopupService popupService, ILogger<SettingsViewModel> logger) : ObservableValidator, IQueryAttributable
 {
     private bool firstLoad = true;
     [ObservableProperty]
@@ -36,13 +37,19 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         if(location != null) return;
         Settings.IncludeLocation = false;
     }
+    
+    [RelayCommand]
+    private async Task PrinterAsync()
+    {
+        await popupService.ShowPopupAsync<PrinterViewModel>(Shell.Current);
+    }
 
     [RelayCommand]
     private async Task OrganizationChangedAsync()
     {
         if(Settings.Webex.OrgId == Settings.User.Organization?.Id) return;
         Settings.Webex.OrgId = Settings.User.Organization?.Id;
-        Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
+        await Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
         messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
     }
 

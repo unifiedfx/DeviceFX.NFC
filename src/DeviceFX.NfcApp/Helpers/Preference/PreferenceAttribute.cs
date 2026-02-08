@@ -32,6 +32,11 @@ public class PreferenceAttribute<T>(string key, T? defaultValue = default) : Pre
     public override ValueTask SaveAsync(INotifyPropertyChanged instance, PropertyInfo property)
     {
         var value = property.GetValue(instance);
+        if (value == null)
+        {
+            Preferences.Default.Remove(Key);
+            return new ValueTask();
+        }
         switch (value)
         {
             case string s:
