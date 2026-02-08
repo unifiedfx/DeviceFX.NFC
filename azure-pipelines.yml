@@ -94,7 +94,8 @@ jobs:
         inputs:
           targetType: 'inline'
           script: |
-            xcodebuild -downloadPlatform iOS -buildVersion $(iOSPlatform)
+            xcrun simctl list > /dev/null
+            xcodebuild -downloadPlatform iOS -architectureVariant universal
             xcrun simctl list devices
 
       - task: Bash@3
@@ -103,8 +104,7 @@ jobs:
           targetType: 'inline'
           script: |
             dotnet nuget locals all --clear
-            dotnet workload install maui --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json
-            dotnet workload install android ios maui wasm-tools --source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet7/nuget/v3/index.json --source https://api.nuget.org/v3/index.json    
+            dotnet workload install maui-android maui-ios --version 9.0.308.2
 
       - task: Bash@3
         displayName: Restore nuget
