@@ -35,7 +35,6 @@ public class ZebraPrinterClient(string host, int port = 9100, TimeSpan? timeout 
                 while (true)
                 {
                     bytesRead = await stream.ReadAsync(buffer, cts.Token);
-                    Console.WriteLine($"bytesRead: {bytesRead}");
                     if (bytesRead == 0) break;
                     responseBytes.AddRange(buffer.AsSpan(0, bytesRead).ToArray());
                     if (buffer.AsSpan(0, bytesRead).Contains((byte) 0x03)) break;

@@ -144,6 +144,7 @@ jobs:
             -p:ApplicationDisplayVersion=$(GitVersion.SemVer)
             -p:ApplicationVersion=$(GitVersion.SemVer)
             -p:CodesignKey="$(CodesignKey)"
+            -p:BuildForSimulator=false
 
       - task: CopyFiles@2
         displayName: Copy iOS app and ipa files
