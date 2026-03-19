@@ -9,13 +9,6 @@ public class WebexLicenseDto
 {
     public string id { get; set; }
     public string name { get; set; }
-    public int totalUnits { get; set; }
-    public int consumedUnits { get; set; }
-    public int consumedByUsers { get; set; }
-    public int consumedByWorkspaces { get; set; }
-    public string subscriptionId { get; set; }
-    public string siteUrl { get; set; }
-    public string siteType { get; set; }
 }
 
 
