@@ -64,8 +64,8 @@ jobs:
           echo SemVer: '$(GitVersion.SemVer)'
           echo AssemblySemVer: '$(GitVersion.AssemblySemVer)'
           echo AssemblySemFileVer: '$(GitVersion.AssemblySemFileVer)'
-          echo Version (short): '$(Version)'
-          echo SemVer (short): '$(SemVer)'
+          echo VersionShort: '$(Version)'
+          echo SemVerShort: '$(SemVer)'
           # BuildSemVer was never set; kept for historical visibility only
           echo BuildSemVer: '$(BuildSemVer)'
 
