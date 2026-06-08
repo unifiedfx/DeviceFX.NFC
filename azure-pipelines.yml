@@ -64,6 +64,9 @@ jobs:
           echo SemVer: '$(GitVersion.SemVer)'
           echo AssemblySemVer: '$(GitVersion.AssemblySemVer)'
           echo AssemblySemFileVer: '$(GitVersion.AssemblySemFileVer)'
+          echo Version (short): '$(Version)'
+          echo SemVer (short): '$(SemVer)'
+          # BuildSemVer was never set; kept for historical visibility only
           echo BuildSemVer: '$(BuildSemVer)'
 
       - task: UseDotNet@2
@@ -138,11 +141,11 @@ jobs:
           script: >-
             dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
             -f net9.0-ios -c Release
-            -p:Version=$(GitVersion.SemVer)
-            -p:AssemblyVersion=$(GitVersion.AssemblySemVer)
-            -p:FileVersion=$(GitVersion.AssemblySemFileVer)
-            -p:ApplicationDisplayVersion=$(GitVersion.SemVer)
-            -p:ApplicationVersion=$(GitVersion.SemVer)
+            -p:Version=$(Version)
+            -p:AssemblyVersion=$(AssemblyVersion)
+            -p:FileVersion=$(FileVersion)
+            -p:ApplicationDisplayVersion=$(Version)
+            -p:ApplicationVersion=$(Version)
             -p:CodesignKey="$(CodesignKey)"
             -p:BuildForSimulator=false
 
@@ -180,10 +183,10 @@ jobs:
             dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
             -f net9.0-android
             -c Release
-            -p:Version=$(GitVersion.SemVer)
-            -p:AssemblyVersion=$(GitVersion.AssemblySemVer)
-            -p:FileVersion=$(GitVersion.AssemblySemFileVer)
-            -p:ApplicationDisplayVersion=$(GitVersion.SemVer)
+            -p:Version=$(Version)
+            -p:AssemblyVersion=$(AssemblyVersion)
+            -p:FileVersion=$(FileVersion)
+            -p:ApplicationDisplayVersion=$(Version)
             -p:AndroidSigningKeyPass=$(KeyStore-Password)
             -p:AndroidSigningStorePass=$(KeyStore-Password)
             -p:AndroidSigningKeyStore=$(System.DefaultWorkingDirectory)\\$(KeyStore-FileName)
@@ -216,8 +219,8 @@ jobs:
           action: 'create'
           target: '$(Build.SourceVersion)'
           tagSource: 'userSpecifiedTag'
-          tag: v$(GitVersion.SemVer)
-          title: '$(ProductName) Release v$(GitVersion.SemVer)'
+          tag: v$(Version)
+          title: '$(ProductName) Release v$(Version)'
           addChangeLog: true
           assets: |
             '$(Build.ArtifactStagingDirectory)/ios/**/*.ipa'

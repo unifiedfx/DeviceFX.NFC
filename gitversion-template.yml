@@ -4,7 +4,38 @@ steps:
       versionSpec: '5.x'
     displayName: 'Setup GitVersion'
 
-  - task: gitversion/execute@0
-    name: GitVersion
+  # Run GitVersion and explicitly publish the variables the rest of the pipeline
+  # expects. Relying solely on gitversion/execute@0 + name: GitVersion has proven
+  # fragile for $(GitVersion.*) expansion inside later Bash@3 inline scripts.
+  - script: |
+      set -euo pipefail
+
+      echo "Running GitVersion..."
+      # dotnet-gitversion is provided by gitversion/setup@3
+      JSON=$(dotnet-gitversion)
+      echo "$JSON"
+
+      # Extract the properties we actually use in azure-pipelines.yml.
+      # Fall back to MajorMinorPatch if a property is unexpectedly missing.
+      SemVer=$(echo "$JSON" | jq -r '.SemVer // .MajorMinorPatch // "0.0.0"')
+      AssemblySemVer=$(echo "$JSON" | jq -r '.AssemblySemVer // .MajorMinorPatch // "0.0.0.0"')
+      AssemblySemFileVer=$(echo "$JSON" | jq -r '.AssemblySemFileVer // .MajorMinorPatch // "0.0.0.0"')
+
+      echo "GitVersion.SemVer=$SemVer"
+      echo "GitVersion.AssemblySemVer=$AssemblySemVer"
+      echo "GitVersion.AssemblySemFileVer=$AssemblySemFileVer"
+
+      # Publish under the exact names referenced in the pipeline (dotted form).
+      # This guarantees $(GitVersion.SemVer) etc. will be available for
+      # variable substitution in all subsequent Bash@3 / script steps in this job.
+      echo "##vso[task.setvariable variable=GitVersion.SemVer;]$SemVer"
+      echo "##vso[task.setvariable variable=GitVersion.AssemblySemVer;]$AssemblySemVer"
+      echo "##vso[task.setvariable variable=GitVersion.AssemblySemFileVer;]$AssemblySemFileVer"
+
+      # Also publish convenient short names (used by some teams and for the GitHubRelease task).
+      echo "##vso[task.setvariable variable=Version;]$SemVer"
+      echo "##vso[task.setvariable variable=SemVer;]$SemVer"
+      echo "##vso[task.setvariable variable=AssemblyVersion;]$AssemblySemVer"
+      echo "##vso[task.setvariable variable=FileVersion;]$AssemblySemFileVer"
     displayName: 'Determine next Semantic Version'
-    
+
