@@ -279,6 +279,23 @@ public partial class MainViewModel : WizardViewModelBase
         if (WifiIncludePassword && string.IsNullOrWhiteSpace(WifiPassword)) return false;
         return true;
     }
+
+    private static string? CleanActivationCode(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        var digits = new string(input.Where(char.IsDigit).ToArray());
+        if (digits.Length > 16) digits = digits[..16];
+        return digits.Length == 0 ? null : digits;
+    }
+
+    partial void OnActivationCodeChanged(string? value)
+    {
+        var cleaned = CleanActivationCode(value);
+        if (cleaned != value)
+        {
+            ActivationCode = cleaned;
+        }
+    }
     
     #endregion
 

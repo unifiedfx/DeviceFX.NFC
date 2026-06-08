@@ -57,7 +57,7 @@
                         <Label StyleClass="Subheading">Set the phone to directly register using the entered Activation Code</Label>
                         <Grid ColumnDefinitions="Auto, *">
                             <Label StyleClass="FormLabel" Text="Code: "></Label>
-                            <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding ActivationCode}" Placeholder="Activation Code (Required)" Keyboard="Numeric"></Entry>
+                            <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding ActivationCode}" Placeholder="Activation Code (Required)" Keyboard="Numeric" MaxLength="25"></Entry>
                         </Grid>
                     </StackLayout>
                 </VerticalStackLayout>
