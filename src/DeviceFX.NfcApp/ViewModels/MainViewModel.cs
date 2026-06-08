@@ -139,6 +139,9 @@ public partial class MainViewModel : WizardViewModelBase
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
     [SecurePreference<string>("wifi-password")]
     private string? wifiPassword;
+
+    [ObservableProperty]
+    private bool wifiPasswordVisible;
     
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OnboardingCommand))]
@@ -280,6 +283,12 @@ public partial class MainViewModel : WizardViewModelBase
         return true;
     }
 
+    [RelayCommand]
+    private void ToggleWifiPasswordVisibility()
+    {
+        WifiPasswordVisible = !WifiPasswordVisible;
+    }
+
     private static string? CleanActivationCode(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
@@ -296,6 +305,19 @@ public partial class MainViewModel : WizardViewModelBase
             ActivationCode = cleaned;
         }
     }
+
+    partial void OnWifiIncludePasswordChanged(bool value)
+    {
+        if (value)
+            WifiPasswordVisible = false;
+    }
+
+    partial void OnWifiPasswordVisibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(WifiPasswordVisibilityGlyph));
+    }
+
+    public string WifiPasswordVisibilityGlyph => WifiPasswordVisible ? "\ue8f5" : "\ue8f4";
     
     #endregion
 

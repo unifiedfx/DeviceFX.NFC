@@ -8,6 +8,7 @@
         <ResourceDictionary Source="../../Resources/Styles/CustomStyles.xaml">
             <toolkit:BoolToObjectConverter x:Key="BoolToObjectConverter" TrueObject="True" FalseObject="False" />
         </ResourceDictionary>
+        <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
         <Style TargetType="RadioButton">
             <Setter Property="ControlTemplate" Value="{StaticResource SecondaryToggleRadioButtonTemplate}" />
             <Setter Property="FontAttributes" Value="Bold" />
@@ -44,9 +45,26 @@
                 <Label StyleClass="FormLabel" Text="User: "></Label>
                 <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiUser}" Placeholder="Wifi username (Required)"></Entry>
             </Grid>
-            <Grid ColumnDefinitions="Auto, *" IsVisible="{Binding WifiIncludePassword}">
+            <Grid ColumnDefinitions="Auto, *, Auto" IsVisible="{Binding WifiIncludePassword}">
                 <Label StyleClass="FormLabel" Text="Password: "></Label>
-                <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiPassword}" Placeholder="Wifi password (Required)" IsPassword="True"></Entry>                
+                <Entry Grid.Column="1" StyleClass="FormEntry" Text="{Binding WifiPassword}" Placeholder="Wifi password (Required)" IsPassword="{Binding WifiPasswordVisible, Converter={StaticResource InvertedBoolConverter}}"></Entry>
+                <ImageButton Grid.Column="2"
+                             Command="{Binding ToggleWifiPasswordVisibilityCommand}"
+                             WidthRequest="28"
+                             HeightRequest="28"
+                             MinimumWidthRequest="28"
+                             MinimumHeightRequest="28"
+                             VerticalOptions="Center"
+                             HorizontalOptions="Center"
+                             BackgroundColor="Transparent"
+                             Padding="5,0,0,0">
+                    <ImageButton.Source>
+                        <FontImageSource FontFamily="MaterialIcons"
+                                         Glyph="{Binding WifiPasswordVisibilityGlyph}"
+                                         Size="20"
+                                         Color="{StaticResource Gray600}" />
+                    </ImageButton.Source>
+                </ImageButton>
             </Grid>
             <HorizontalStackLayout 
                 RadioButtonGroup.SelectedValue="{Binding WifiBand}"

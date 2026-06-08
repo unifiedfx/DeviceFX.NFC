@@ -15,6 +15,7 @@ public partial class OnboardingPage : StepContentPage
     {
         base.OnAppearing();
         if (BindingContext is not MainViewModel viewModel) return;
+        viewModel.WifiPasswordVisible = false;
         if (!string.IsNullOrWhiteSpace(viewModel.ActivationCode))
         {
             viewModel.OnboardingMode = MainViewModel.OnboardingActivation;
