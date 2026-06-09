@@ -1,0 +1,59 @@
+# Docs for the Azure Functions Deploy action: https://github.com/azure/functions-action
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy .NET to Azure Function App - func-devicefx-nfc-badge
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/DeviceFX.Function/**'
+      - 'DeviceFX.Function.sln'
+      - '.github/workflows/deploy-badge-function.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/DeviceFX.Function' # path to the function app project
+  DOTNET_VERSION: '9.0' # set this to the dotnet version to use
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v4
+
+      - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet publish --configuration Release --output ./output
+          popd
+
+      - name: 'Azure Login (OIDC)'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: 'func-devicefx-nfc-badge'
+          slot-name: 'Production'
+          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          # publish-profile is omitted because we authenticate via OIDC + azure/login
+          sku: 'flexconsumption'
