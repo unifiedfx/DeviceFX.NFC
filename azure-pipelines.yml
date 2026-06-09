@@ -14,6 +14,12 @@ trigger:
       - src/DeviceFX.Function/*
       - DeviceFX.Proxy.CDA.sln
       - src/DeviceFX.Proxy.CDA/*
+      # Documentation-only changes should not trigger the mobile app build
+      - docs/*
+      - docs/**/*
+      - '*.md'
+      - LICENSE
+      - README.md
 
 variables:
   - group: 'DeviceFX NFC Variables'
