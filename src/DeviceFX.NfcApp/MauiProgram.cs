@@ -35,12 +35,6 @@ public static class MauiProgram
             });
 #if IOS
         builder.Services.AddSingleton<IAttestationService, iOSAttestationService>();
-        // https://learn.microsoft.com/en-us/dotnet/maui/whats-new/dotnet-9?view=net-maui-9.0#collectionview-and-carouselview
-        builder.ConfigureMauiHandlers(handlers =>
-        {
-            handlers.AddHandler<CollectionView, Microsoft.Maui.Controls.Handlers.Items2.CollectionViewHandler2>();
-            handlers.AddHandler<CarouselView, Microsoft.Maui.Controls.Handlers.Items2.CarouselViewHandler2>();
-        });
 #elif ANDROID
         builder.Services.AddSingleton<IAttestationService, AndroidAttestationService>();
 #endif

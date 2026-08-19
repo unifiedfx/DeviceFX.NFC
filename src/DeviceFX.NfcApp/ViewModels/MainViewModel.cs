@@ -218,7 +218,7 @@ public partial class MainViewModel : WizardViewModelBase
             {
                 error = cdaService.GetError();
                 CdaCheckBusy = false;
-                await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+                await Shell.Current.DisplayAlertAsync("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
             }
         }
         catch (Exception)
@@ -226,7 +226,7 @@ public partial class MainViewModel : WizardViewModelBase
             canSignData = false;
             error = "Service unreachable";
             CdaCheckBusy = false;
-            await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+            await Shell.Current.DisplayAlertAsync("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
         }
         CdaCheckBusy = false;
         if(error != null) _ = ShowCdaError(error);
@@ -378,7 +378,7 @@ public partial class MainViewModel : WizardViewModelBase
         if(SearchSelection.Issue == null || !SearchSelection.Checked) return;
         var issue = SearchSelection.Issue;
         SearchSelection = null;
-        await Shell.Current.DisplayAlert("Unable to use", $"{issue}", "Ok");
+        await Shell.Current.DisplayAlertAsync("Unable to use", $"{issue}", "Ok");
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
@@ -491,7 +491,7 @@ public partial class MainViewModel : WizardViewModelBase
                 await deviceService.ScanPhoneAsync(Operation);
                 if (incorrectModel)
                 {
-                    if (await Application.Current?.MainPage?.DisplayAlert("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
+                    if (await Shell.Current.DisplayAlertAsync("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
                     {
                         ProvisionModel = Operation.Phone.Pid;
                         Operation.Reset();
@@ -626,7 +626,7 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand(CanExecute = nameof(CanShare))]
     public async Task ShareAsync()
     {
-        var csv = await Application.Current?.MainPage?.DisplayAlert("Export Format", "Choose the export format", "CSV", "Excel")!;
+        var csv = await Shell.Current.DisplayAlertAsync("Export Format", "Choose the export format", "CSV", "Excel");
         var filePath = await inventoryService.ExportAsync(csv ? "csv" : "xlsx");
         if(filePath == null) return;
         await Share.Default.RequestAsync(new ShareFileRequest
@@ -639,7 +639,7 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand(CanExecute = nameof(CanShare))]
     public async Task ClearAsync()
     {
-        var result = await Application.Current?.MainPage?.DisplayAlert("Remove Phones", "Do you wish to remove all phones?", "Yes", "No")!;
+        var result = await Shell.Current.DisplayAlertAsync("Remove Phones", "Do you wish to remove all phones?", "Yes", "No");
         if(!result) return;
         await inventoryService.ClearAsync();
         PhoneList.Clear();

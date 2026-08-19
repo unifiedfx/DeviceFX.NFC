@@ -14,7 +14,7 @@ public static class VisualElementExtensions
             var step = 0;
             while (!cancellationToken.IsCancellationRequested)
             {
-                await visualElement.RotateTo(++step * 90);
+                await visualElement.RotateToAsync(++step * 90);
                 if (step != 4) continue;
                 step = 0;
                 visualElement.Rotation = 0; // Reset to 0 for continuous loop
