@@ -76,9 +76,11 @@ jobs:
           echo BuildSemVer: '$(BuildSemVer)'
 
       - task: UseDotNet@2
+        displayName: Use .NET SDK from global.json
         inputs:
           packageType: 'sdk'
-          version: '$(DotNetVersion)'
+          useGlobalJson: true
+          workingDirectory: '$(Build.SourcesDirectory)'
 
       - task: PowerShell@2
         displayName: Select Xcode Version
@@ -113,7 +115,8 @@ jobs:
           targetType: 'inline'
           script: |
             dotnet nuget locals all --clear
-            dotnet workload install maui-android maui-ios --version $(DotNetVersion)
+            # Workload-set versions (e.g. 9.0.308.2) are not the same as SDK versions.
+            dotnet workload install maui-android maui-ios
 
       - task: Bash@3
         displayName: Restore nuget
