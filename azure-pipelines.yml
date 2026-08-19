@@ -131,6 +131,8 @@ jobs:
           certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
           certPwd: '$(iOSCertPassword)'
           keychain: 'temp'
+          # macOS-26 ships OpenSSL 3, which cannot parse this PKCS#12 without -legacy.
+          opensslPkcsArgs: '-legacy'
 
       - task: InstallAppleProvisioningProfile@1
         inputs:
@@ -262,6 +264,7 @@ jobs:
                 certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
                 certPwd: '$(iOSCertPassword)'
                 keychain: 'temp'
+                opensslPkcsArgs: '-legacy'
 
             - task: AppStoreRelease@1
               inputs:
