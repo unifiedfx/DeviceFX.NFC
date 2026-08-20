@@ -26,6 +26,8 @@
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+        <!-- .NET 10 default is true (faster JNI). Rider Release deploy crashes at MauiApplication.n_onCreate when they are on; keep them for CI publish. -->
+        <AndroidEnableMarshalMethods Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' and '$(TF_BUILD)' != 'true'">false</AndroidEnableMarshalMethods>
         <Company>UnifiedFX</Company>
         <XamlCEnableSourceBindings>true</XamlCEnableSourceBindings>
     </PropertyGroup>
