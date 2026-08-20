@@ -41,7 +41,8 @@
             </StackLayout>
             <CollectionView Grid.Row="2" x:Name="SearchResults"
                             SelectionChangedCommand="{Binding SelectionChangedCommand}"
-                            SelectedItem="{Binding SearchSelection}"
+                            SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference SearchResults}}"
+                            SelectedItem="{Binding SearchSelection, Mode=OneWay}"
                             ItemsSource="{Binding SearchResults}"
                             SelectionMode="Single">
                 <CollectionView.ItemTemplate>

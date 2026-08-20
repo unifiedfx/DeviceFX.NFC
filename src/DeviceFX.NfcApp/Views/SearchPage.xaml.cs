@@ -13,13 +13,21 @@ public partial class SearchPage : StepContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        var viewmodel = BindingContext as MainViewModel;
+        viewmodel?.SetSearchPageVisible(true);
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await Task.Delay(1);
             searchBar.Focus();
         });
-        var viewmodel = BindingContext as MainViewModel;
-        if(viewmodel == null) return;
+        if (viewmodel == null) return;
         if (!viewmodel.Settings.User.IsLoggedIn) await viewmodel.BackCommand.ExecuteAsync(null);
+    }
+
+    protected override void OnDisappearing()
+    {
+        if (BindingContext is MainViewModel viewmodel)
+            viewmodel.SetSearchPageVisible(false);
+        base.OnDisappearing();
     }
 }
