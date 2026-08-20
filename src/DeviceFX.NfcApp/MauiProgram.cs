@@ -47,16 +47,15 @@ public static class MauiProgram
                     .OpenUrl((app, url, options) =>
                     {
                         if (Uri.TryCreate(url.AbsoluteString, UriKind.Absolute, out var uri))
-                        {
-                            Application.Current?.SendOnAppLinkRequestReceived(uri);
-                        }
-
+                            App.ForwardAppLink(uri);
                         return true;
                     })
                     .ContinueUserActivity((app, userActivity, completionHandler) =>
                     {
                         if (userActivity.ActivityType != Foundation.NSUserActivityType.BrowsingWeb) return true;
-                        Application.Current?.SendOnAppLinkRequestReceived(userActivity.WebPageUrl);
+                        if (userActivity.WebPageUrl is { } nsUrl &&
+                            Uri.TryCreate(nsUrl.AbsoluteString, UriKind.Absolute, out var uri))
+                            App.ForwardAppLink(uri);
                         return true;
                     });
             });
@@ -65,15 +64,17 @@ public static class MauiProgram
             {
                 android.OnCreate((activity, bundle) =>
                 {
-                    if(activity.Intent?.DataString == null || activity.Intent.Data?.Host == "auth") return;
-                    var uri = new Uri(activity.Intent.DataString);
-                    Application.Current?.SendOnAppLinkRequestReceived(uri);
+                    if (activity.Intent?.DataString is not { } data || activity.Intent.Data?.Host == "auth") return;
+                    if (Uri.TryCreate(data, UriKind.Absolute, out var uri))
+                        App.ForwardAppLink(uri);
                 });
                 android.OnNewIntent((activity, intent) =>
                 {
-                    if(intent?.DataString == null || intent.Data?.Host == "auth") return;
-                    var uri = new Uri(intent.DataString);
-                    Application.Current?.SendOnAppLinkRequestReceived(uri);
+                    if (intent is not null)
+                        activity.Intent = intent;
+                    if (intent?.DataString is not { } data || intent.Data?.Host == "auth") return;
+                    if (Uri.TryCreate(data, UriKind.Absolute, out var uri))
+                        App.ForwardAppLink(uri);
                 });
             });
 #endif
@@ -142,7 +143,7 @@ public static class MauiProgram
         {
             if (category == null || level == LogLevel.Trace) return false;
             if(category.StartsWith(nameof(Microsoft)) && level <= LogLevel.Error) return false;
-            var settings = Application.Current?.Windows[0].Handler?.MauiContext?.Services.GetService<Settings>();
+            var settings = IPlatformApplication.Current?.Services?.GetService<Settings>();
             return settings is not {EnableDebug: false};
         });
         builder.AddNfc();

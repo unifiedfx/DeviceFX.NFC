@@ -16,5 +16,7 @@ public partial class SettingsPage : ContentPage
     {
         base.OnAppearing();
         await settingsViewModel.ReadAsync();
+        if (Application.Current is App app)
+            await app.ApplyPendingAppLinkQueryAsync(settingsViewModel.Settings);
     }
 }

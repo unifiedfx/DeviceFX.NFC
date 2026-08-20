@@ -97,7 +97,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         ImageSource = "grey_settings_gear.png";
         messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
     }
-    public void ApplyQueryAttributes(IDictionary<string, object> query) => Settings.ApplyQuery(query);
+    public void ApplyQueryAttributes(IDictionary<string, object> query) => _ = Settings.ApplyQuery(query);
     
     public async Task ReadAsync()
     {

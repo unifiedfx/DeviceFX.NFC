@@ -48,6 +48,6 @@ public abstract partial class WizardViewModelBase : ObservableObject, IQueryAttr
     [RelayCommand]
     protected async Task OpenUrlAsync(string url) => await Launcher.OpenAsync(url);
 
-    public void ApplyQueryAttributes(IDictionary<string, object> query)=> this.ApplyQuery(query);
+    public void ApplyQueryAttributes(IDictionary<string, object> query) => _ = this.ApplyQuery(query);
 
 }
