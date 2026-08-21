@@ -54,9 +54,10 @@ public partial class AppShell : Shell
         appViewModel.Title =Current?.CurrentItem.CurrentItem.CurrentItem.Title ?? Current?.CurrentPage.Title;
         var page = Current?.CurrentPage;
         var skipPreferenceLoad = Application.Current is App app && app.ConsumeSkipPreferenceLoad();
+        var popped = args.Source is ShellNavigationSource.Pop or ShellNavigationSource.PopToRoot;
         _ = Dispatcher.DispatchAsync(async () =>
         {
-            if (!skipPreferenceLoad && page is {BindingContext: INotifyPropertyChanged viewModel})
+            if (!skipPreferenceLoad && !popped && page is {BindingContext: INotifyPropertyChanged viewModel})
                 await viewModel.LoadAsync();
             if (Application.Current is App current)
                 await current.TryProcessPendingAppLinkAsync();

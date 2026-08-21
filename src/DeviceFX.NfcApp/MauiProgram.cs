@@ -64,6 +64,8 @@ public static class MauiProgram
             {
                 android.OnCreate((activity, bundle) =>
                 {
+                    // Recreations keep the original VIEW intent; only handle a fresh launch.
+                    if (bundle is not null) return;
                     if (activity.Intent?.DataString is not { } data || activity.Intent.Data?.Host == "auth") return;
                     if (Uri.TryCreate(data, UriKind.Absolute, out var uri))
                         App.ForwardAppLink(uri);

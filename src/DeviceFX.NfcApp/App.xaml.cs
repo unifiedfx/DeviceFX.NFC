@@ -73,7 +73,9 @@ public partial class App : Application
         try
         {
             logger?.LogInformation("Applying app link {Uri} as {Route}", uri, route);
-            await Shell.Current.GoToAsync(route, false, query);
+            // Do not pass query into GoToAsync — Shell would keep it on the route and
+            // re-apply IQueryAttributable (overwriting later edits) when a modal pops.
+            await Shell.Current.GoToAsync(route, false);
         }
         catch (Exception e)
         {
