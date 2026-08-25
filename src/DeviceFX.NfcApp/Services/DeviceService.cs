@@ -17,7 +17,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
         if (!nfcTagService.ReadingAvailable)
         {
 #if DEBUG
-            var result = await Application.Current?.MainPage?.DisplayAlert("NFC not available", "Emulate a device scan?", "OK", "Cancel")!;
+            var result = await Shell.Current.DisplayAlertAsync("NFC not available", "Emulate a device scan?", "OK", "Cancel");
             if (result)
             {
                 var rand = new Random().Next(0x0000, 0xFFFF).ToString("X4");
@@ -34,7 +34,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             }
             else await SetResult($"Cancelled");
 #else
-            await Application.Current?.MainPage?.DisplayAlert("Scan issue", "NFC is not available on this device", "OK")!;
+            await Shell.Current.DisplayAlertAsync("Scan issue", "NFC is not available on this device", "OK");
 #endif
             return;
         }
@@ -57,6 +57,7 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             Console.WriteLine(e);
             operation.Result = e.Message;
             operation.State = OperationState.Failure;
+            tcs.TrySetResult();
         }
         await tcs.Task;
 

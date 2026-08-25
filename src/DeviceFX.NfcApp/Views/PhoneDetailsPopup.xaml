@@ -5,10 +5,11 @@
                xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
                xmlns:toolkit2="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                xmlns:helpers="clr-namespace:DeviceFX.NfcApp.Helpers"
+               xmlns:model="clr-namespace:DeviceFX.NfcApp.Model"
                WidthRequest="350"
                BackgroundColor="LightGray"
                Margin="5, 20"
-               Padding="0"
+               Padding="5, 20"
                x:Class="DeviceFX.NfcApp.Views.PhoneDetailsPopup">
     <toolkit:Popup.Resources>
         <ResourceDictionary>
@@ -30,9 +31,9 @@
                       WidthRequest="350"
                       HeightRequest="490">
             <CarouselView.ItemTemplate>
-                <DataTemplate>
-                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 20" WidthRequest="300">
-                        <Grid RowDefinitions="Auto, *, 60">
+                <DataTemplate x:DataType="model:PhoneDetails">
+                    <Border BackgroundColor="White" StrokeShape="RoundRectangle 20" WidthRequest="300" HeightRequest="490">
+                        <Grid RowDefinitions="Auto, *, 60" HeightRequest="490">
                             <StackLayout Spacing="5" HorizontalOptions="Center">
                                 <Image Source="{Binding Image}" HeightRequest="200" Aspect="AspectFit" />
                                 <Label Text="{Binding Pid}" Style="{StaticResource CenteredLabelStyle}"/>

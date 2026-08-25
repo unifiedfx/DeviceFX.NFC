@@ -62,7 +62,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         }
         catch (Exception e)
         {
-            await Shell.Current.DisplayAlert("Login error", $"{e.Message}", "Ok");
+            await Shell.Current.DisplayAlertAsync("Login error", $"{e.Message}", "Ok");
         }
     }
 
@@ -97,7 +97,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         ImageSource = "grey_settings_gear.png";
         messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
     }
-    public void ApplyQueryAttributes(IDictionary<string, object> query) => Settings.ApplyQuery(query);
+    public void ApplyQueryAttributes(IDictionary<string, object> query) => _ = Settings.ApplyQuery(query);
     
     public async Task ReadAsync()
     {
@@ -120,7 +120,7 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     private async Task<bool> RetryLogin()
     {
         if (!MainThread.IsMainThread) return await MainThread.InvokeOnMainThreadAsync(RetryLogin);
-        var retryLogin = await Shell.Current.DisplayAlert("Login", "Session timeout, login again?", "Login", "Ok");
+        var retryLogin = await Shell.Current.DisplayAlertAsync("Login", "Session timeout, login again?", "Login", "Ok");
         if (!retryLogin)
         {
             Settings.User.Reset();

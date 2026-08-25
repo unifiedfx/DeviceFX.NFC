@@ -1,7 +1,8 @@
 parameters:
   - name: VmImage
     type: string
-    default: 'macOS-15'
+    # Current MAUI iOS packs require Xcode 26.6, which is not on macOS-15.
+    default: 'macOS-26'
 
 trigger:
   branches:
@@ -76,9 +77,11 @@ jobs:
           echo BuildSemVer: '$(BuildSemVer)'
 
       - task: UseDotNet@2
+        displayName: Use .NET SDK from global.json
         inputs:
           packageType: 'sdk'
-          version: '$(DotNetVersion)'
+          useGlobalJson: true
+          workingDirectory: '$(Build.SourcesDirectory)'
 
       - task: PowerShell@2
         displayName: Select Xcode Version
@@ -113,7 +116,8 @@ jobs:
           targetType: 'inline'
           script: |
             dotnet nuget locals all --clear
-            dotnet workload install maui-android maui-ios --version 9.0.308.2
+            # Workload-set versions (e.g. 9.0.308.2) are not the same as SDK versions.
+            dotnet workload install maui-android maui-ios
 
       - task: Bash@3
         displayName: Restore nuget
@@ -127,6 +131,8 @@ jobs:
           certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
           certPwd: '$(iOSCertPassword)'
           keychain: 'temp'
+          # macOS-26 ships OpenSSL 3, which cannot parse this PKCS#12 without -legacy.
+          opensslPkcsArgs: '-legacy'
 
       - task: InstallAppleProvisioningProfile@1
         inputs:
@@ -146,7 +152,7 @@ jobs:
           targetType: 'inline'
           script: >-
             dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
-            -f net9.0-ios -c Release
+            -f net10.0-ios -c Release
             -p:Version=$(Version)
             -p:AssemblyVersion=$(AssemblyVersion)
             -p:FileVersion=$(FileVersion)
@@ -187,7 +193,7 @@ jobs:
           targetType: 'inline'
           script: >-
             dotnet publish src/DeviceFX.NfcApp/DeviceFX.NfcApp.csproj
-            -f net9.0-android
+            -f net10.0-android
             -c Release
             -p:Version=$(Version)
             -p:AssemblyVersion=$(AssemblyVersion)
@@ -258,6 +264,7 @@ jobs:
                 certSecureFile: 'Apple Distribution Unified Fx Limited.p12'
                 certPwd: '$(iOSCertPassword)'
                 keychain: 'temp'
+                opensslPkcsArgs: '-legacy'
 
             - task: AppStoreRelease@1
               inputs:

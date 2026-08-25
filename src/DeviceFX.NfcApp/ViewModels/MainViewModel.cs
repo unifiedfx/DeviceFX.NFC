@@ -218,7 +218,7 @@ public partial class MainViewModel : WizardViewModelBase
             {
                 error = cdaService.GetError();
                 CdaCheckBusy = false;
-                await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+                await Shell.Current.DisplayAlertAsync("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
             }
         }
         catch (Exception)
@@ -226,7 +226,7 @@ public partial class MainViewModel : WizardViewModelBase
             canSignData = false;
             error = "Service unreachable";
             CdaCheckBusy = false;
-            await Shell.Current.DisplayAlert("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
+            await Shell.Current.DisplayAlertAsync("CDA Signing Service", string.Format(messageTemplate, error), "Ok");
         }
         CdaCheckBusy = false;
         if(error != null) _ = ShowCdaError(error);
@@ -343,47 +343,118 @@ public partial class MainViewModel : WizardViewModelBase
     private ObservableCollection<SearchResult> searchResults = [];
 
     private CancellationTokenSource searchCts = new();
-    [RelayCommand]
-    public void Search(string? query)
+    private bool searchPageVisible = true;
+    private string? checkingId;
+
+    public void SetSearchPageVisible(bool visible)
     {
-        searchCts.Cancel();
-        searchCts = new();
-        _ = Task.Run(Query);
-        async Task Query()
-        {
-            var token = searchCts.Token;
-            await Task.Delay(300, token);
-            if(token.IsCancellationRequested) return;
-            var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, token);
-            if(token.IsCancellationRequested) return;
-            if (string.IsNullOrEmpty(query) || results.Count == 0) 
-                SearchResults.Clear();
-            else
-                SearchResults = new ObservableCollection<SearchResult>(results.Order());
-            SearchSelection = null;
-        }
+        searchPageVisible = visible;
+        if (!visible)
+            searchCts.Cancel();
     }
 
     [RelayCommand]
-    public async Task SelectionChangedAsync()
+    public void Search(string? query)
     {
-        if(SearchSelection == null) return;
-        if (SearchSelection.Checked)
+        if (!searchPageVisible) return;
+        searchCts.Cancel();
+        searchCts = new();
+        var token = searchCts.Token;
+        _ = Query();
+        async Task Query()
         {
-            if (SearchSelection.Issue != null) SearchSelection = null;
+            try
+            {
+                await Task.Delay(300, token);
+                if (token.IsCancellationRequested || !searchPageVisible) return;
+                var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, token);
+                if (token.IsCancellationRequested || !searchPageVisible) return;
+                await MainThread.InvokeOnMainThreadAsync(() => ApplySearchResults(query, results));
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+    }
+
+    private void ApplySearchResults(string? query, List<SearchResult> results)
+    {
+        if (!searchPageVisible) return;
+        var previous = SearchSelection;
+        if (string.IsNullOrEmpty(query) || results.Count == 0)
+            SearchResults.Clear();
+        else
+        {
+            var ordered = results.Order().ToList();
+            if (previous != null)
+            {
+                var index = ordered.FindIndex(r => r.Id == previous.Id);
+                if (index >= 0)
+                {
+                    // Keep the selected instance so an in-flight CheckResult still mutates the bound object.
+                    previous.Name = ordered[index].Name;
+                    previous.Number = ordered[index].Number;
+                    previous.Type = ordered[index].Type;
+                    ordered[index] = previous;
+                }
+            }
+            SearchResults = new ObservableCollection<SearchResult>(ordered);
+        }
+
+        if (previous == null) return;
+        if (SearchResults.Any(r => ReferenceEquals(r, previous)))
+            OnPropertyChanged(nameof(SearchSelection));
+        else
+            SearchSelection = previous;
+    }
+
+    [RelayCommand]
+    public async Task SelectionChangedAsync(SearchResult? selected)
+    {
+        // Android CollectionView reports a null selection when the native list detaches.
+        if (selected == null) return;
+
+        if (SearchSelection != null && selected.Id == SearchSelection.Id)
+            selected = SearchSelection;
+        else
+            SearchSelection = selected;
+
+        if (selected.Checked)
+        {
+            if (selected.Issue != null) SearchSelection = null;
             return;
         }
-        await webexService.UpdateOrganization(Settings.User, Settings.User.Organization.Id);
-        await searchService.CheckResult(SearchSelection, Settings.User.Organization?.Id, Settings.User?.Organization?.LicenseIds);
-        if(SearchSelection.Issue == null || !SearchSelection.Checked) return;
-        var issue = SearchSelection.Issue;
-        SearchSelection = null;
-        await Shell.Current.DisplayAlert("Unable to use", $"{issue}", "Ok");
+        // List rebuild can re-fire selection for the same pick; don't start a second check.
+        if (checkingId != null && checkingId == selected.Id) return;
+
+        checkingId = selected.Id;
+        try
+        {
+            await webexService.UpdateOrganization(Settings.User, Settings.User.Organization.Id);
+            await searchService.CheckResult(selected, Settings.User.Organization?.Id, Settings.User?.Organization?.LicenseIds);
+            if (selected.Issue == null || !selected.Checked) return;
+            if (SearchSelection != null && SearchSelection.Id == selected.Id)
+            {
+                if (!ReferenceEquals(SearchSelection, selected))
+                {
+                    SearchSelection.Checked = selected.Checked;
+                    SearchSelection.Issue = selected.Issue;
+                }
+                SearchSelection = null;
+            }
+            await Shell.Current.DisplayAlertAsync("Unable to use", $"{selected.Issue}", "Ok");
+        }
+        finally
+        {
+            if (checkingId == selected.Id)
+                checkingId = null;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task SelectedAsync()
     {
+        await searchCts.CancelAsync();
         Operation.Reset();
         await NextAsync();
     }
@@ -491,7 +562,7 @@ public partial class MainViewModel : WizardViewModelBase
                 await deviceService.ScanPhoneAsync(Operation);
                 if (incorrectModel)
                 {
-                    if (await Application.Current?.MainPage?.DisplayAlert("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
+                    if (await Shell.Current.DisplayAlertAsync("Incorrect Model", "Update model and try again?", "Retry", "Cancel"))
                     {
                         ProvisionModel = Operation.Phone.Pid;
                         Operation.Reset();
@@ -626,7 +697,7 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand(CanExecute = nameof(CanShare))]
     public async Task ShareAsync()
     {
-        var csv = await Application.Current?.MainPage?.DisplayAlert("Export Format", "Choose the export format", "CSV", "Excel")!;
+        var csv = await Shell.Current.DisplayAlertAsync("Export Format", "Choose the export format", "CSV", "Excel");
         var filePath = await inventoryService.ExportAsync(csv ? "csv" : "xlsx");
         if(filePath == null) return;
         await Share.Default.RequestAsync(new ShareFileRequest
@@ -639,7 +710,7 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand(CanExecute = nameof(CanShare))]
     public async Task ClearAsync()
     {
-        var result = await Application.Current?.MainPage?.DisplayAlert("Remove Phones", "Do you wish to remove all phones?", "Yes", "No")!;
+        var result = await Shell.Current.DisplayAlertAsync("Remove Phones", "Do you wish to remove all phones?", "Yes", "No");
         if(!result) return;
         await inventoryService.ClearAsync();
         PhoneList.Clear();

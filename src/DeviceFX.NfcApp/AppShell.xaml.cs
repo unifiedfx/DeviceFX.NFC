@@ -52,13 +52,16 @@ public partial class AppShell : Shell
         base.OnNavigated(args);
         var appViewModel = serviceProvider.GetService<AppViewModel>();
         appViewModel.Title =Current?.CurrentItem.CurrentItem.CurrentItem.Title ?? Current?.CurrentPage.Title;
-        if (Current?.CurrentPage is Page {BindingContext: INotifyPropertyChanged viewModel})
+        var page = Current?.CurrentPage;
+        var skipPreferenceLoad = Application.Current is App app && app.ConsumeSkipPreferenceLoad();
+        var popped = args.Source is ShellNavigationSource.Pop or ShellNavigationSource.PopToRoot;
+        _ = Dispatcher.DispatchAsync(async () =>
         {
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
+            if (!skipPreferenceLoad && !popped && page is {BindingContext: INotifyPropertyChanged viewModel})
                 await viewModel.LoadAsync();
-            });
-        }
+            if (Application.Current is App current)
+                await current.TryProcessPendingAppLinkAsync();
+        });
     }
 
     protected override void OnNavigating(ShellNavigatingEventArgs args)

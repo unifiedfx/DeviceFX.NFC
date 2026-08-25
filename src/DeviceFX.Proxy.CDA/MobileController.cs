@@ -15,7 +15,8 @@ public class MobileController(
     private const string AuthCookieName = "AuthChallenge";
     private readonly CiscoOptions options = options.Value;
 
-    public async Task<IActionResult> AttestChallenge()
+    [HttpGet]
+    public IActionResult AttestChallenge()
     {
         var challenge = Guid.NewGuid().ToString();
         Response.Cookies.Append(AuthCookieName, challenge, new CookieOptions

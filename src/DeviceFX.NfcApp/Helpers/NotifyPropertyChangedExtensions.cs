@@ -30,7 +30,7 @@ public static class NotifyPropertyChangedExtensions
         await property.attribute.RemoveAsync(self, property.info);
     }
     
-    public static async void ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)
+    public static async Task ApplyQuery(this INotifyPropertyChanged self, IDictionary<string, object> query)
     {
         foreach (var property in GetProperties(self))
         {

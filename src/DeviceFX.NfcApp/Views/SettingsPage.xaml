@@ -5,6 +5,7 @@
              xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              Title="Settings"
+             SafeAreaEdges="Container"
              HideSoftInputOnTapped="True"
              x:Name="This"
              x:Class="DeviceFX.NfcApp.Views.SettingsPage">

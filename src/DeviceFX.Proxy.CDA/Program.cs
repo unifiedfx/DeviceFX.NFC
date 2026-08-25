@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.RateLimiting;
 using DeviceFX.Proxy.CDA;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.IdentityModel.Tokens;
@@ -69,6 +70,15 @@ builder.Services.Configure<HttpLoggingOptions>(options =>
     var httpLoggingSection = builder.Configuration.GetSection(nameof(HttpLoggingOptions));
     httpLoggingSection.Bind(options);
 });
+
+var aiConnectionString =
+    builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+    ?? builder.Configuration["ApplicationInsights:ConnectionString"];
+if (!string.IsNullOrWhiteSpace(aiConnectionString) && !aiConnectionString.Contains("__"))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+    builder.Services.AddSingleton<ITelemetryInitializer, CloudRoleNameTelemetryInitializer>();
+}
 
 var app = builder.Build();
 app.UseHttpLogging();

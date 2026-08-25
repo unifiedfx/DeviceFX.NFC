@@ -18,22 +18,22 @@ Before proceeding, ensure you have:
   - **Windows** (supports Android)  
   - **macOS** (supports Android + iOS)  
   - **Linux** (only supports Android)  
-- **.NET SDK** installed (9.x stable recommended)  
+- **.NET SDK** installed (10.x stable recommended)  
 - .NET MAUI workload(s) installed  
 - VS Code (latest stable)  
 - VS Code extensions: C# Dev Kit, .NET MAUI  
 - For Android development: Java JDK, Android SDK, emulator or physical device  
 - For iOS targets (on macOS): Xcode + command line tools  
 
-> Microsoft’s official .NET MAUI installation guidance is useful: see “Install Visual Studio / .NET / workloads” sections. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-9.0))  
+> Microsoft’s official .NET MAUI installation guidance is useful: see “Install Visual Studio / .NET / workloads” sections. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-10.0))  
 > The .NET MAUI extension for VS Code adds debugging, target switching, etc. ([marketplace.visualstudio.com](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.dotnet-maui))  
 
 ---
 
 ## 1. Install .NET SDK & Workloads
 
-1. Download and install the **.NET 9 SDK** from [https://dotnet.microsoft.com/en-us/download](https://dotnet.microsoft.com/en-us/download).  
-   > **Note:** This repository includes a `global.json` that pins the SDK to version **9.0.304**. Make sure you have this version (or a compatible 9.x patch) installed, or the build may fail.
+1. Download and install the **.NET 10 SDK** from [https://dotnet.microsoft.com/en-us/download](https://dotnet.microsoft.com/en-us/download).  
+   > **Note:** This repository includes a `global.json` that pins the SDK to version **10.0.105** (with `rollForward: latestFeature`). Make sure you have this version (or a compatible 10.x patch) installed, or the build may fail.
 2. Verify by running:
    ```bash
    dotnet --version
@@ -86,7 +86,7 @@ In VS Code, install:
 
 These provide tooling support: build, debugging, project explorer, etc.
 
-After installation, you may see a .NET MAUI “walkthrough” or setup prompts. Follow them to connect your Microsoft account (for Dev Kit) and configure environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-9.0))
+After installation, you may see a .NET MAUI “walkthrough” or setup prompts. Follow them to connect your Microsoft account (for Dev Kit) and configure environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-10.0))
 
 ---
 
@@ -109,13 +109,13 @@ To build or debug on Android:
 5. Use the MAUI target `InstallAndroidDependencies` if needed:
    ```bash
    dotnet build -t:InstallAndroidDependencies \
-     -f:net9.0-android \
+     -f:net10.0-android \
      -p:AndroidSdkDirectory="$ANDROID_HOME" \
      -p:JavaSdkDirectory="$JAVA_HOME" \
      -p:AcceptAndroidSDKLicenses=true
    ```
 
-6. In VS Code, you may run the command palette (Ctrl+Shift+P / Cmd+Shift+P) → `​.NET MAUI: Configure Android` → and set / refresh the Android environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-9.0))  
+6. In VS Code, you may run the command palette (Ctrl+Shift+P / Cmd+Shift+P) → `​.NET MAUI: Configure Android` → and set / refresh the Android environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-10.0))  
 
 ---
 
@@ -130,7 +130,7 @@ If you're on macOS and want to build for iOS:
    ```
 3. Accept license agreements, open Xcode at least once.  
 4. Ensure simulator runtimes are installed (Xcode → Preferences → Components).  
-5. In VS Code, run `​.NET MAUI: Configure Apple` → Refresh Apple environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-9.0))  
+5. In VS Code, run `​.NET MAUI: Configure Apple` → Refresh Apple environment. ([learn.microsoft.com](https://learn.microsoft.com/en-us/dotnet/maui/get-started/installation?view=net-maui-10.0))  
 
 ---
 
@@ -148,13 +148,13 @@ You can also build and run via CLI to check for compile errors before using VS C
 
 ```bash
 # e.g. build Android
-dotnet build -f:net9.0-android
+dotnet build -f:net10.0-android
 
 # or run
-dotnet run -f:net9.0-android
+dotnet run -f:net10.0-android
 
 # similarly for iOS (on macOS)
-dotnet build -f:net9.0-ios
+dotnet build -f:net10.0-ios
 ```
 
 If build fails, examine the error messages, ensure workloads and SDKs are installed and paths configured.

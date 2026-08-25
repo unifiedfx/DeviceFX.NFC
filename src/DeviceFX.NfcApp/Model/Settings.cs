@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DeviceFX.NfcApp.Helpers.Preference;
 using Microsoft.Extensions.Configuration;
@@ -34,9 +35,16 @@ public partial class Settings : ObservableValidator
     [Preference<string>("printer-name")]
     private string? printerName;
     
-    public Settings(IConfiguration configuration) => 
-        Webex = configuration.GetSection("AppSettings").Get<WebexSettings>() ?? new WebexSettings();
+    public Settings(IConfiguration configuration) =>
+        Webex = Bind<WebexSettings>(configuration.GetSection("AppSettings"));
 
     public WebexSettings Webex { get; }
     public UserProfile User { get; } = new();
+
+    // .NET 10 removed DAM from ConfigurationBinder.Get<T>(), so annotate T here
+    // or Release trim drops WebexSettings setters (CdaServiceUrl stays null).
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "T is preserved by DynamicallyAccessedMembers.All")]
+    private static T Bind<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(IConfiguration section)
+        where T : class, new() =>
+        section.Get<T>() ?? new T();
 }
