@@ -198,7 +198,7 @@ public partial class MainViewModel : WizardViewModelBase
         var canSign = !requiresSigning || !canSignData.HasValue || canSignData.Value || CanSignError == null;
         return OnboardingMode switch
         {
-            OnboardingActivation => canSign && !string.IsNullOrEmpty(ActivationCode),
+            OnboardingActivation => canSign && ActivationCodeValidator.IsValid(ActivationCode),
             _ => canSign
         };
     }
@@ -289,17 +289,9 @@ public partial class MainViewModel : WizardViewModelBase
         WifiPasswordVisible = !WifiPasswordVisible;
     }
 
-    private static string? CleanActivationCode(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return null;
-        var digits = new string(input.Where(char.IsDigit).ToArray());
-        if (digits.Length > 16) digits = digits[..16];
-        return digits.Length == 0 ? null : digits;
-    }
-
     partial void OnActivationCodeChanged(string? value)
     {
-        var cleaned = CleanActivationCode(value);
+        var cleaned = ActivationCodeValidator.Normalize(value);
         if (cleaned != value)
         {
             ActivationCode = cleaned;
