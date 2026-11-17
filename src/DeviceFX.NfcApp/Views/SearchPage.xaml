@@ -39,30 +39,34 @@
                     </SearchBar.Behaviors>
                 </SearchBar>
             </StackLayout>
-            <CollectionView Grid.Row="2" x:Name="SearchResults"
-                            SelectionChangedCommand="{Binding SelectionChangedCommand}"
-                            SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference SearchResults}}"
-                            SelectedItem="{Binding SearchSelection, Mode=OneWay}"
-                            ItemsSource="{Binding SearchResults}"
-                            SelectionMode="Single">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <StackLayout Style="{StaticResource SelectionListStyle}" Orientation="Horizontal">
-                            <Image Source="{Binding Type, Converter={StaticResource SelectionImageConverter}, ConverterParameter={StaticResource SelectionImageMapper}}" HeightRequest="32"></Image>
-                            <Label
-                                FontSize="22"
-                                Padding="5,5"
-                                VerticalTextAlignment="Center"
-                                Text="{Binding .}"
-                                TextColor="blue">
-                            </Label>
-                        </StackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyView>
-                    <Label Text="No search results..."/>
-                </CollectionView.EmptyView>
-            </CollectionView>
+            <Grid Grid.Row="2">
+                <CollectionView x:Name="SearchResults"
+                                SelectionChanged="OnSearchResultsSelectionChanged"
+                                SelectedItem="{Binding SearchSelection, Mode=OneWay}"
+                                ItemsSource="{Binding SearchResults}"
+                                SelectionMode="Single">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <StackLayout Style="{StaticResource SelectionListStyle}" Orientation="Horizontal">
+                                <Image Source="{Binding Type, Converter={StaticResource SelectionImageConverter}, ConverterParameter={StaticResource SelectionImageMapper}}" HeightRequest="32"></Image>
+                                <Label
+                                    FontSize="22"
+                                    Padding="5,5"
+                                    VerticalTextAlignment="Center"
+                                    Text="{Binding .}"
+                                    TextColor="blue">
+                                </Label>
+                            </StackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <Label Text="No search results..."/>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+                <ActivityIndicator Scale="{OnPlatform 1.0, iOS=2.0}"
+                                   IsVisible="{Binding IsValidatingSelection}"
+                                   IsRunning="{Binding IsValidatingSelection}" />
+            </Grid>
             <shared:NavigationButtonsView Grid.Row="3" BackCommand="{Binding BackCommand}" NextCommand="{Binding SelectedCommand}"/>
         </Grid>
     </ContentPage.Content>

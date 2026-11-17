@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -9,12 +10,38 @@ using Microsoft.Extensions.Logging;
 
 namespace DeviceFX.NfcApp.ViewModels;
 
-public partial class SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger, IPopupService popupService, ILogger<SettingsViewModel> logger) : ObservableValidator, IQueryAttributable
+public partial class SettingsViewModel : ObservableValidator, IQueryAttributable
 {
+    private const int VersionTapCountToToggle = 5;
+    private static readonly TimeSpan VersionTapWindow = TimeSpan.FromSeconds(2);
+
+    private readonly Settings settings;
+    private readonly ILocationService locationService;
+    private readonly IWebexService webexService;
+    private readonly IMessenger messenger;
+    private readonly IPopupService popupService;
+    private readonly ILogger<SettingsViewModel> logger;
     private bool firstLoad = true;
-    [ObservableProperty]
-    private string imageSource = "grey_settings_gear.png";
-    public Settings Settings { get; } = settings;
+    private int versionTapCount;
+    private DateTime lastVersionTapUtc;
+    private string appliedIntegrationMode;
+    private bool changingIntegration;
+
+    public SettingsViewModel(Settings settings, ILocationService locationService, IWebexService webexService, IMessenger messenger, IPopupService popupService, ILogger<SettingsViewModel> logger)
+    {
+        this.settings = settings;
+        this.locationService = locationService;
+        this.webexService = webexService;
+        this.messenger = messenger;
+        this.popupService = popupService;
+        this.logger = logger;
+        appliedIntegrationMode = settings.IntegrationMode;
+        settings.PropertyChanged += OnSettingsPropertyChanged;
+    }
+
+    public Settings Settings => settings;
+    public UserProfile User => settings.User;
+    public string AppVersion { get; } = $"Version {AppInfo.VersionString}";
 
     [RelayCommand]
     private async Task CloseAsync()
@@ -26,6 +53,8 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     private async Task CancelAsync()
     {
         await Settings.LoadAsync();
+        Settings.ApplySelectedIntegration();
+        appliedIntegrationMode = Settings.IntegrationMode;
         await Shell.Current.Navigation.PopModalAsync();
     }
 
@@ -47,10 +76,67 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     [RelayCommand]
     private async Task OrganizationChangedAsync()
     {
-        if(Settings.Webex.OrgId == Settings.User.Organization?.Id) return;
+        var selectedId = Settings.User.Organization?.Id;
+        if (Settings.Webex.OrgId == selectedId) return;
+        var previousId = Settings.Webex.OrgId;
+        try
+        {
+            if (!await webexService.SwitchOrganizationAsync(Settings.User, selectedId))
+            {
+                Settings.User.Organization = Settings.User.Organizations.FirstOrDefault(o => o.Id == previousId);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "OrganizationChangedAsync");
+            Settings.User.Organization = Settings.User.Organizations.FirstOrDefault(o => o.Id == previousId);
+            await Shell.Current.DisplayAlertAsync("Organization", e.Message, "Ok");
+            return;
+        }
+
         Settings.Webex.OrgId = Settings.User.Organization?.Id;
         await Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
         messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
+    }
+
+    private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(Settings.IntegrationMode) || changingIntegration) return;
+        _ = ChangeIntegrationAsync();
+    }
+
+    private async Task ChangeIntegrationAsync()
+    {
+        var mode = Settings.IntegrationMode;
+        if (string.IsNullOrWhiteSpace(mode) || mode == appliedIntegrationMode) return;
+        changingIntegration = true;
+        try
+        {
+            if (Settings.User.IsLoggedIn)
+                await LogoutAsync();
+            Settings.ApplySelectedIntegration();
+            await Settings.SaveAsync(nameof(Settings.IntegrationMode));
+            appliedIntegrationMode = mode;
+        }
+        finally
+        {
+            changingIntegration = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task VersionTappedAsync()
+    {
+        var now = DateTime.UtcNow;
+        if (now - lastVersionTapUtc > VersionTapWindow)
+            versionTapCount = 0;
+        lastVersionTapUtc = now;
+        versionTapCount++;
+        if (versionTapCount < VersionTapCountToToggle) return;
+        versionTapCount = 0;
+        Settings.IntegrationSelectorVisible = !Settings.IntegrationSelectorVisible;
+        await Settings.SaveAsync(nameof(Settings.IntegrationSelectorVisible));
     }
 
     [RelayCommand]
@@ -82,7 +168,6 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
             if(Settings.Webex.Email != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.Email));
             if(Settings.Webex.OrgId != null) await Settings.Webex.SaveAsync(nameof(Settings.Webex.OrgId));
         }
-        ImageSource = Settings.User.Picture ?? "grey_settings_gear.png";
     }
 
     [RelayCommand]
@@ -94,7 +179,6 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         Settings.Webex.OrgId = null;
         await Settings.Webex.RemoveAsync(nameof(Settings.Webex.Email));
         await Settings.Webex.RemoveAsync(nameof(Settings.Webex.OrgId));
-        ImageSource = "grey_settings_gear.png";
         messenger.Send(new OrganizationMessage(Settings.User.Organization?.Id));
     }
     public void ApplyQueryAttributes(IDictionary<string, object> query) => _ = Settings.ApplyQuery(query);
@@ -103,6 +187,8 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
     {
         webexService.RetryLogin = RetryLogin;
         await Settings.LoadAsync();
+        Settings.ApplySelectedIntegration();
+        appliedIntegrationMode = Settings.IntegrationMode;
         if (firstLoad)
         {
             try
@@ -124,7 +210,6 @@ public partial class SettingsViewModel(Settings settings, ILocationService locat
         if (!retryLogin)
         {
             Settings.User.Reset();
-            ImageSource = "grey_settings_gear.png";
             return false;
         }
         await LoginAsync();

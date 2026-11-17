@@ -3,7 +3,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
+             xmlns:shared="clr-namespace:DeviceFX.NfcApp.Views.Shared"
              x:Name="This"
              x:Class="DeviceFX.NfcApp.Views.Shared.ShellTitleView">
     <Grid VerticalOptions="Center" HeightRequest="44" ColumnDefinitions="44,*,44">
@@ -12,22 +12,16 @@
                 <On Platform="Android" Value="16,0"/>
             </OnPlatform>
         </Grid.Margin>
-        <Border
-            StrokeThickness="0"
-            StrokeShape="RoundRectangle 22,22,22,22"
-            HorizontalOptions="Center"
-            VerticalOptions="Center"
-            WidthRequest="40"
-            HeightRequest="40">
-            <ffimageloading:CachedImage Source="{Binding Settings.ImageSource}"
-                                        CacheType="All" 
-                                        LoadingPlaceholder="grey_settings_gear.png"
-                                        ErrorPlaceholder="grey_settings_gear.png"
-                                        HorizontalOptions="Center" />
-            <Border.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding OpenSettingsCommand}"></TapGestureRecognizer>
-            </Border.GestureRecognizers>
-        </Border>
+        <Grid HorizontalOptions="Center" VerticalOptions="Center" WidthRequest="40" HeightRequest="40">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding OpenSettingsCommand}" />
+            </Grid.GestureRecognizers>
+            <shared:ProfileAvatarView
+                Size="40"
+                CircleColor="White"
+                InitialsColor="{DynamicResource Primary}"
+                BindingContext="{Binding Settings.User}" />
+        </Grid>
         <Label Grid.Column="1"
                TextColor="White"
                FontSize="Large"

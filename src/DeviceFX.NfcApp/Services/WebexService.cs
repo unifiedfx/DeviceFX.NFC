@@ -56,6 +56,13 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
 
     public async Task LogoutAsync() => await settings.Webex.RemoveAsync(nameof(settings.Webex.AccessToken));
 
+    public async Task<bool> SwitchOrganizationAsync(UserProfile user, string? orgId)
+    {
+        if (string.IsNullOrWhiteSpace(orgId)) return false;
+        await UpdateOrganization(user, orgId);
+        return user.Organization != null;
+    }
+
     public async Task<bool> UpdateUser(UserProfile user, string? orgId = null, bool retryLogin = false)
     {
         var httpClient = await GetHttpClient(retryLogin);
@@ -73,14 +80,24 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
     {
         user.Organization = user.Organizations.FirstOrDefault(o => o.Id == orgId) ?? user.Organization;
         if(user.Organization is not {LicenseIds: null}) return;
-        var httpClient = await GetHttpClient();
-        if(httpClient == null) return;
-        var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={user.Organization.Id}");
-        user.Organization.LicenseIds =
-            licenses?.items
-                .Where(i => settings.Webex.LicenseFilters.Any(f =>
-                    i.name.Contains(f, StringComparison.InvariantCultureIgnoreCase))).Select(l => l.id).ToList() ??
-            new List<string>();
+        try
+        {
+            var httpClient = await GetHttpClient(true);
+            if(httpClient == null) return;
+            var licenses = await httpClient.GetFromJsonAsync<WebexLicensesDto>($"v1/licenses?orgId={user.Organization.Id}");
+            var filters = settings.Webex.LicenseFilters ?? [];
+            user.Organization.LicenseIds =
+                licenses?.items?
+                    .Where(i => i.name != null && filters.Any(f =>
+                        i.name.Contains(f, StringComparison.InvariantCultureIgnoreCase)))
+                    .Select(l => l.id)
+                    .ToList() ??
+                [];
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "UpdateOrganization");
+        }
     }
 
     public async Task<string?> AddDeviceByMac(string orgId, string mac, string model, string type, string? id = null)
@@ -127,11 +144,10 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         };
         data.Add(type == UserType ? "personId" : "workspaceId", id);
         var httpClient = await GetHttpClient(true);
-        if (httpClient == null) return null;
+        if (httpClient == null) return new ActivationResult(Error: "Not signed in");
         var startTime = DateTime.UtcNow;
         var response = await httpClient.PostAsJsonAsync($"v1/devices/activationCode?orgId={orgId}", data);
         var duration = DateTime.UtcNow - startTime;
-        string? result = null;
         if (!response.IsSuccessStatusCode)
         {
             string? trackingId = null;
@@ -147,7 +163,7 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
                 errorMessage = message.GetString();
             }
             catch (Exception) { }
-            logger.LogWarning("AddDeviceByMac error: {Result}, trackingId: {TrackingId}", errorMessage ?? response.ReasonPhrase, trackingId);
+            logger.LogWarning("AddDeviceByActivationCode error: {Result}, trackingId: {TrackingId}", errorMessage ?? response.ReasonPhrase, trackingId);
             return new ActivationResult(Error: errorMessage ?? response.ReasonPhrase);
         }
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -163,8 +179,6 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         return new ActivationResult(code, expiry);
     }
 
-    public record ActivationResult(string? Code = null, DateTime? Expiry = null, string? Error = null);
-    
     private async Task<HttpClient?> GetHttpClient(bool retryLogin = false)
     {
         if (new DateTime(settings.Webex.TokenExpires) < DateTime.UtcNow)
@@ -215,13 +229,13 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
         }).ToList() ?? [];
     }
 
-    public async Task CheckResult(SearchResult result, string orgId, List<string> LicenseIds)
+    public async Task CheckResult(SearchResult result, string? orgId, IReadOnlyList<string>? licenseIds)
     {
         if(result.Checked) return;
         var httpClient = await GetHttpClient(true);
         if (httpClient == null)
         {
-            result.Issue = "Unable to validate";
+            result.Issue = SearchResultValidator.UnableToValidate;
             return;
         }
         if (result.Type == UserType) await CheckPerson();
@@ -242,22 +256,11 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
             }
             if (person == null)
             {
-                result.Issue = "Unable to validate";
+                result.Issue ??= SearchResultValidator.UnableToValidate;
                 return;
             }
             result.Picture = person.avatar;
-            if(person.licenses?.Length == 0)
-            {
-                result.Checked = true;
-                result.Issue = "No license";
-                return;
-            }
-            var license = LicenseIds.FirstOrDefault(l => person.licenses.Contains(l));
-            if(license == null)
-            {
-                result.Checked = true;
-                result.Issue = "No calling license";
-            }
+            SearchResultValidator.ApplyPersonLicenses(result, person.licenses, licenseIds);
         }
         async Task CheckWorkspace()
         {
@@ -273,21 +276,14 @@ public class WebexService(Settings settings, ILogger<WebexService> logger, Telem
             }
             if (workspace == null)
             {
-                result.Issue = "Unable to validate";
+                result.Issue ??= SearchResultValidator.UnableToValidate;
                 return;
             }
-            result.Checked = true;
-            if (workspace.calling.type.Contains("free")) return;
-            if (workspace.calling.webexCalling == null || workspace.calling.webexCalling.licenses.Length == 0)
-            {
-                result.Issue = "No license";
-                return;
-            }
-            var license = LicenseIds.FirstOrDefault(l => workspace.calling.webexCalling.licenses.Contains(l));
-            if(license == null)
-            {
-                result.Issue = "No calling license";
-            }
+            SearchResultValidator.ApplyWorkspaceCalling(
+                result,
+                workspace.calling?.type,
+                workspace.calling?.webexCalling?.licenses,
+                licenseIds);
         }
     }
 }

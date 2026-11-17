@@ -5,5 +5,5 @@ namespace DeviceFX.NfcApp.Abstractions;
 public interface ISearchService
 {
     Task<List<SearchResult>> SearchAsync(string query, string orgId, CancellationToken cancellationToken = default);
-    Task CheckResult(SearchResult result, string orgId, List<string> LicenseIds);
+    Task CheckResult(SearchResult result, string? orgId, IReadOnlyList<string>? licenseIds);
 }

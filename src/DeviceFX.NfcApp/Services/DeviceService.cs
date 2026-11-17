@@ -138,12 +138,15 @@ public class DeviceService(IServiceProvider provider, IInventoryService inventor
             try
             {
                 var configRecords = await operation.GetConfig();
+                if (operation.Phone.RequiresSigning && (configRecords == null || configRecords.Count == 0))
+                    return await SetResult("Failed to sign onboarding data", cancellationToken: cancellationToken);
                 if(configRecords != null) records.AddRange(configRecords);
                 alertMessage(operation.Phone.RequiresSigning ? "Writing Signed Onboarding Details" : "Writing Encrypted Onboarding Details");
             }
             catch (Exception e)
             {
                 logger.LogError(e, "Config Error");
+                return await SetResult(e.Message, cancellationToken: cancellationToken);
             }
             messages.Add(new NdefMessage(records));
             messages.Add(new NdefMessage([]) {IsMessage = false});

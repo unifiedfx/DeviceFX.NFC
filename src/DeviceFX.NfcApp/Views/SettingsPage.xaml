@@ -15,7 +15,7 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <ContentPage.Content>
-        <Grid RowDefinitions="Auto, Auto, *, 50" Padding="20,20" RowSpacing="10">
+        <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Padding="20,20" RowSpacing="10">
             <Grid ColumnDefinitions="*,Auto,*,Auto">
                 <Label Grid.Column="1" Text="Settings" FontSize="28" FontAttributes="Bold" VerticalOptions="Center" HorizontalOptions="Center" Padding="0,0"/>
                 <Button ImageSource="printer_icon.png" Grid.Column="3" Command="{Binding PrinterCommand}"></Button>
@@ -33,17 +33,11 @@
                 <shared:LabelCheckboxView LabelText="Enable Debugging" IsToggled="{Binding Settings.EnableDebug}"></shared:LabelCheckboxView>
             </StackLayout>
             <StackLayout Grid.Row="2" IsVisible="{Binding Settings.User.IsLoggedIn}" Spacing="20">
-                <Image Source="{Binding Settings.User.Picture}"
-                       WidthRequest="80"
-                       HeightRequest="80"
-                       HorizontalOptions="Center">
-                    <Image.Clip>
-                        <EllipseGeometry
-                            Center="40,40"
-                            RadiusX="40"
-                            RadiusY="40"/>
-                    </Image.Clip>
-                </Image>
+                <shared:ProfileAvatarView Size="80"
+                                          CircleColor="{StaticResource Primary}"
+                                          InitialsColor="White"
+                                          HorizontalOptions="Center"
+                                          BindingContext="{Binding Settings.User}" />
                 <Label Text="{Binding Settings.User.DisplayName}"
                        FontSize="Large"
                        FontAttributes="Bold"
@@ -64,6 +58,37 @@
                 <Button Text="Login" Command="{Binding LoginCommand}" WidthRequest="120"></Button>
             </StackLayout>
             <shared:NavigationButtonsView Grid.Row="3" BackButtonText="Cancel" BackCommand="{Binding CancelCommand}" NextButtonText="OK" NextCommand="{Binding CloseCommand}"/>
+            <VerticalStackLayout Grid.Row="4" Spacing="8">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8"
+                      RadioButtonGroup.GroupName="Integration"
+                      RadioButtonGroup.SelectedValue="{Binding Settings.IntegrationMode, Mode=TwoWay}"
+                      IsVisible="{Binding Settings.IntegrationSelectorVisible}">
+                    <RadioButton Grid.Column="0"
+                                 Value="DeviceFX"
+                                 Content="DeviceFX"
+                                 ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}"
+                                 HorizontalOptions="Fill"
+                                 FontSize="14" />
+                    <RadioButton Grid.Column="1"
+                                 Value="Webex"
+                                 Content="Direct Webex"
+                                 ControlTemplate="{StaticResource SecondaryToggleRadioButtonTemplate}"
+                                 HorizontalOptions="Fill"
+                                 FontSize="14" />
+                </Grid>
+                <Label Text="{Binding AppVersion}"
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       MinimumHeightRequest="44"
+                       Padding="16,10">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding VersionTappedCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </VerticalStackLayout>
         </Grid>
     </ContentPage.Content>
 </ContentPage>

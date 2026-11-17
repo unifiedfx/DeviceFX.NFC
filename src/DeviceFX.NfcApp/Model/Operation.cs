@@ -1,10 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DeviceFX.NfcApp.Services;
+using DeviceFX.NfcApp.Abstractions;
 using UFX.DeviceFX.NFC.Ndef;
 
 namespace DeviceFX.NfcApp.Model;
 
-public partial class Operation(CdaService cdaService) : OperationBase
+public partial class Operation(ICdaService cdaService) : OperationBase
 {
     public const string OnboardingMethod = "onboardingMethod";
     public const string OnboardingDetail = "onboardingDetail";
@@ -45,6 +45,8 @@ public partial class Operation(CdaService cdaService) : OperationBase
         if (signature == null || signatureMac != Phone.Mac || signatureConfig != config)
         {
             signature = await cdaService.SignData(config, Phone.Mac, signatureCts.Token);
+            if (signature is not { Length: > 0 })
+                throw new InvalidOperationException("Failed to sign onboarding data");
             signatureMac = Phone.Mac;
             signatureConfig = config;
         }

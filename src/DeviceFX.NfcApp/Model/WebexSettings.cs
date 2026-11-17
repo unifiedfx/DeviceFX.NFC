@@ -12,14 +12,20 @@ public partial class WebexSettings : ObservableObject
     private string redirectUrl;
 
     [ObservableProperty]
+    private string authority;
+
+    [ObservableProperty]
     private string authUrl;
+
+    [ObservableProperty]
+    private string apiHost;
 
     [ObservableProperty]
     private string scopes;
 
     [ObservableProperty]
     private string[] licenseFilters;
-    
+
     [ObservableProperty]
     private string cdaServiceUrl;
 
@@ -32,9 +38,17 @@ public partial class WebexSettings : ObservableObject
     private string? accessToken;
 
     [ObservableProperty]
+    [SecurePreference<string>("refresh-token")]
+    private string? refreshToken;
+
+    [ObservableProperty]
+    [SecurePreference<string>("id-token")]
+    private string? idToken;
+
+    [ObservableProperty]
     [Preference<string>("email")]
     private string? email;
-    
+
     [ObservableProperty]
     [Preference<string>("orgId")]
     private string? orgId;

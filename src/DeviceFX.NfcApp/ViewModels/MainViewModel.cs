@@ -7,7 +7,6 @@ using DeviceFX.NfcApp.Abstractions;
 using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Helpers.Preference;
 using DeviceFX.NfcApp.Model;
-using DeviceFX.NfcApp.Services;
 using DeviceFX.NfcApp.Views.Shared;
 using UFX.DeviceFX.NFC.Ndef;
 
@@ -23,7 +22,7 @@ public partial class MainViewModel : WizardViewModelBase
     private readonly IDeviceService deviceService;
     private readonly IInventoryService inventoryService;
     private readonly IPopupService popupService;
-    private readonly CdaService cdaService;
+    private readonly ICdaService cdaService;
     private readonly IPrintManager printManager;
 
     public const string OnboardingCloud = "Cloud";
@@ -43,7 +42,7 @@ public partial class MainViewModel : WizardViewModelBase
         IDeviceService deviceService,
         IInventoryService inventoryService,
         IPopupService popupService,
-        CdaService cdaService,
+        ICdaService cdaService,
         IMessenger messenger,
         IPrintManager printManager) : base(steps)
     {
@@ -59,6 +58,7 @@ public partial class MainViewModel : WizardViewModelBase
         this.printManager = printManager;
         messenger.Register<OrganizationMessage>(this, async (recipient, message) =>
         {
+            lastIssuedQuery = null;
             SearchResults.Clear();
             SearchSelection = null;
             SearchInput = String.Empty;
@@ -256,8 +256,8 @@ public partial class MainViewModel : WizardViewModelBase
         if(!string.IsNullOrWhiteSpace(WifiName)) onboarding.Add("Network_Name_1_",WifiName);
         if(WifiIncludeUsername && !string.IsNullOrWhiteSpace(WifiUser)) onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
         if(WifiIncludePassword && !string.IsNullOrWhiteSpace(WifiPassword)) onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
-        onboarding.Add("Wi-Security_Mode_1_", string.IsNullOrWhiteSpace(WifiSecurityMode) ? "Auto" : WifiSecurityMode);
-        onboarding.Add("Wi-Frequency_Band_1_", string.IsNullOrWhiteSpace(WifiBand) ? "Auto" : WifiBand);
+        onboarding.Add("Security_Mode_1_", string.IsNullOrWhiteSpace(WifiSecurityMode) ? "Auto" : WifiSecurityMode);
+        onboarding.Add("Frequency_Band_1_", string.IsNullOrWhiteSpace(WifiBand) ? "Auto" : WifiBand);
         return onboarding;
     }
 
@@ -337,20 +337,30 @@ public partial class MainViewModel : WizardViewModelBase
     private CancellationTokenSource searchCts = new();
     private bool searchPageVisible = true;
     private string? checkingId;
+    private string? lastIssuedQuery;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SelectedCommand))]
+    private bool isValidatingSelection;
 
     public void SetSearchPageVisible(bool visible)
     {
         searchPageVisible = visible;
         if (!visible)
             searchCts.Cancel();
+        else
+            SelectedCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
     public void Search(string? query)
     {
         if (!searchPageVisible) return;
+        if (checkingId != null) return;
+        if (string.Equals(query, lastIssuedQuery, StringComparison.Ordinal)) return;
         searchCts.Cancel();
         searchCts = new();
+        lastIssuedQuery = query;
         var token = searchCts.Token;
         _ = Query();
         async Task Query()
@@ -358,9 +368,11 @@ public partial class MainViewModel : WizardViewModelBase
             try
             {
                 await Task.Delay(300, token);
-                if (token.IsCancellationRequested || !searchPageVisible) return;
-                var results = await searchService.SearchAsync(query, Settings.User.Organization.Id, token);
-                if (token.IsCancellationRequested || !searchPageVisible) return;
+                if (token.IsCancellationRequested || !searchPageVisible || checkingId != null) return;
+                var orgId = Settings.User.Organization?.Id;
+                if (string.IsNullOrEmpty(orgId)) return;
+                var results = await searchService.SearchAsync(query, orgId, token);
+                if (token.IsCancellationRequested || !searchPageVisible || checkingId != null) return;
                 await MainThread.InvokeOnMainThreadAsync(() => ApplySearchResults(query, results));
             }
             catch (OperationCanceledException)
@@ -371,7 +383,7 @@ public partial class MainViewModel : WizardViewModelBase
 
     private void ApplySearchResults(string? query, List<SearchResult> results)
     {
-        if (!searchPageVisible) return;
+        if (!searchPageVisible || checkingId != null) return;
         var previous = SearchSelection;
         if (string.IsNullOrEmpty(query) || results.Count == 0)
             SearchResults.Clear();
@@ -403,28 +415,32 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand]
     public async Task SelectionChangedAsync(SearchResult? selected)
     {
-        // Android CollectionView reports a null selection when the native list detaches.
-        if (selected == null) return;
+        var tap = SearchSelectionTap.Resolve(selected, SearchSelection);
+        if (tap.Ignore) return;
 
-        if (SearchSelection != null && selected.Id == SearchSelection.Id)
-            selected = SearchSelection;
-        else
-            SearchSelection = selected;
-
-        if (selected.Checked)
+        if (!tap.NeedsValidation)
         {
-            if (selected.Issue != null) SearchSelection = null;
+            SearchSelection = tap.Selection;
             return;
         }
+
+        selected = tap.Selection!;
         // List rebuild can re-fire selection for the same pick; don't start a second check.
         if (checkingId != null && checkingId == selected.Id) return;
 
+        // Tapping a row dismisses the keyboard (HideSoftInputOnTapped), which re-fires
+        // SearchBar.TextChanged and would rebuild ItemsSource mid-selection on iOS.
+        searchCts.Cancel();
         checkingId = selected.Id;
+        IsValidatingSelection = true;
+        if (!ReferenceEquals(SearchSelection, selected))
+            SearchSelection = selected;
         try
         {
-            await webexService.UpdateOrganization(Settings.User, Settings.User.Organization.Id);
-            await searchService.CheckResult(selected, Settings.User.Organization?.Id, Settings.User?.Organization?.LicenseIds);
-            if (selected.Issue == null || !selected.Checked) return;
+            var orgId = Settings.User.Organization?.Id;
+            await webexService.UpdateOrganization(Settings.User, orgId);
+            await searchService.CheckResult(selected, orgId, Settings.User.Organization?.LicenseIds);
+            if (string.IsNullOrEmpty(selected.Issue)) return;
             if (SearchSelection != null && SearchSelection.Id == selected.Id)
             {
                 if (!ReferenceEquals(SearchSelection, selected))
@@ -436,22 +452,35 @@ public partial class MainViewModel : WizardViewModelBase
             }
             await Shell.Current.DisplayAlertAsync("Unable to use", $"{selected.Issue}", "Ok");
         }
+        catch (Exception e)
+        {
+            selected.Checked = true;
+            selected.Issue = e.Message;
+            if (SearchSelection != null && SearchSelection.Id == selected.Id)
+                SearchSelection = null;
+            await Shell.Current.DisplayAlertAsync("Unable to use", e.Message, "Ok");
+        }
         finally
         {
             if (checkingId == selected.Id)
+            {
                 checkingId = null;
+                IsValidatingSelection = false;
+            }
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanExecuteSelected))]
     public async Task SelectedAsync()
     {
+        if (!CanExecuteSelected()) return;
         await searchCts.CancelAsync();
         Operation.Reset();
         await NextAsync();
     }
 
-    public bool CanExecuteSelected() => SearchSelection != null;
+    public bool CanExecuteSelected() =>
+        !IsValidatingSelection && SearchSelection is { Checked: true, Issue: null };
     #endregion
 
     #region Provision
@@ -516,7 +545,7 @@ public partial class MainViewModel : WizardViewModelBase
         ProvisionResultActivationCode = null;
         if (IsModelSelected)
         {
-            WebexService.ActivationResult result = new WebexService.ActivationResult(ProvisionActivationCode);
+            ActivationResult result = new(ProvisionActivationCode);
             Operation.Mode = "Provision:ActivationCode";
             Operation.DisplayName = SearchSelection?.Name;
             Operation.DisplayNumber = SearchSelection?.Number;
@@ -633,8 +662,10 @@ public partial class MainViewModel : WizardViewModelBase
     [RelayCommand]
     public async Task ProvisionBackAsync()
     {
+        var startOver = Operation.State == OperationState.Success;
         Operation.Reset();
-        SearchSelection = null;
+        if (startOver)
+            SearchSelection = null;
         await BackAsync();
     }
     #endregion

@@ -2,11 +2,12 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using DeviceFX.NfcApp.Abstractions;
+using DeviceFX.NfcApp.Helpers;
 using DeviceFX.NfcApp.Model;
 
 namespace DeviceFX.NfcApp.Services;
 
-public class CdaService(Settings settings, IAttestationService attestationService)
+public class CdaService(Settings settings, IAttestationService attestationService) : ICdaService
 {
     public async Task<bool> CanSignData(CancellationToken cancellationToken = default) =>
         await attestationService.CanGetTokenAsync(cancellationToken);
@@ -24,10 +25,7 @@ public class CdaService(Settings settings, IAttestationService attestationServic
                 payload,
                 macAddress
             }, cancellationToken: cancellationToken);
-        if (!response.IsSuccessStatusCode) return [];
-        var result = await response.Content.ReadFromJsonAsync<CdaSignResponse>(cancellationToken: cancellationToken);
-        if(result?.IsSuccess == true) return result.SignedDataBytes;
-        return [];
+        return await CdaSignHttp.ReadSignedDataAsync(response, cancellationToken);
     }
 
     private async Task<HttpClient?> GetHttpClient(CancellationToken cancellationToken = default)
@@ -38,12 +36,5 @@ public class CdaService(Settings settings, IAttestationService attestationServic
         httpClient.BaseAddress = new Uri(settings.Webex.CdaServiceUrl);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return httpClient;
-    }
-
-    public record CdaSignResponse(string Status, string StatusMessage, string SignedData)
-    {
-        public bool IsSuccess => Status == "SUCCESS";
-        public string ErrorMessage => $"{Status}: {StatusMessage}";
-        public byte[] SignedDataBytes => Convert.FromBase64String(SignedData);
     }
 }

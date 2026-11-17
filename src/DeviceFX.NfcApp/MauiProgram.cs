@@ -81,18 +81,26 @@ public static class MauiProgram
             });
 #endif
         });
-        await using var stream = await FileSystem.OpenAppPackageFileAsync("appsettings.json");
         var configBuilder = new ConfigurationBuilder();
+        await using var stream = await FileSystem.OpenAppPackageFileAsync("appsettings.json");
         if (stream != null) configBuilder.AddJsonStream(stream);
+#if DEBUG
+        await using var developmentStream = await FileSystem.OpenAppPackageFileAsync("appsettings.Development.json");
+        if (developmentStream != null) configBuilder.AddJsonStream(developmentStream);
+#endif
         var configuration = configBuilder.Build();
         builder.Configuration.AddConfiguration(configuration);
         builder.Services.AddTransientPopup<PhoneDetailsPopup, MainViewModel>();
         builder.Services.AddSingletonPopup<PrinterPopup, PrinterViewModel>();
         builder.Services.AddSingleton<IPrintManager, PrintManager>();
         builder.Services.AddSingleton<CdaService>();
+        builder.Services.AddSingleton<DeviceFxCdaService>();
+        builder.Services.AddSingleton<ICdaService, IntegrationCdaService>();
         builder.Services.AddSingleton<WebexService>();
-        builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<WebexService>());
-        builder.Services.AddSingleton<IWebexService>(provider => provider.GetRequiredService<WebexService>());
+        builder.Services.AddSingleton<DeviceFxService>();
+        builder.Services.AddSingleton<IntegrationWebexService>();
+        builder.Services.AddSingleton<IWebexService>(provider => provider.GetRequiredService<IntegrationWebexService>());
+        builder.Services.AddSingleton<ISearchService>(provider => provider.GetRequiredService<IntegrationWebexService>());
         builder.Services.AddSingleton<ILocationService, LocationService>();
         builder.Services.AddSingleton<IHttpClientFactory, HttpClientFactory>();
         builder.Services.AddSingleton<IInventoryService, InventoryService>();
