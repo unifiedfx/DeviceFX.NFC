@@ -277,6 +277,10 @@ jobs:
                 appType: 'iOS'
                 ipaPath: '$(Agent.BuildDirectory)/**/*.ipa'
                 appSpecificId: '$(AppSpecificId)'
+                # Pinned: with fastlane 2.242.0 the upload failed with "Cannot determine the Apple ID
+                # from Bundle ID" (build 4927); 2.241.2 uploaded fine in build 4904. Revisit when updating.
+                fastlaneToolsVersion: 'SpecificVersion'
+                fastlaneToolsSpecificVersion: '2.241.2'
 
   - deployment: DeviceFXNfcMobileAndroidDeployment
     dependsOn: BuildJob
