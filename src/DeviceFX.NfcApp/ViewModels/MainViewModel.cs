@@ -198,7 +198,7 @@ public partial class MainViewModel : WizardViewModelBase
         var canSign = !requiresSigning || !canSignData.HasValue || canSignData.Value || CanSignError == null;
         return OnboardingMode switch
         {
-            OnboardingActivation => canSign && !string.IsNullOrEmpty(ActivationCode),
+            OnboardingActivation => canSign && ActivationCodeValidator.IsValid(ActivationCode),
             _ => canSign
         };
     }
@@ -253,11 +253,10 @@ public partial class MainViewModel : WizardViewModelBase
                 break;
         }
         if (!WifiInclude || !WifiValid()) return onboarding;
-        if(!string.IsNullOrWhiteSpace(WifiName)) onboarding.Add("Network_Name_1_",WifiName);
-        if(WifiIncludeUsername && !string.IsNullOrWhiteSpace(WifiUser)) onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
-        if(WifiIncludePassword && !string.IsNullOrWhiteSpace(WifiPassword)) onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
-        onboarding.Add("Wi-Security_Mode_1_", string.IsNullOrWhiteSpace(WifiSecurityMode) ? "Auto" : WifiSecurityMode);
-        onboarding.Add("Wi-Frequency_Band_1_", string.IsNullOrWhiteSpace(WifiBand) ? "Auto" : WifiBand);
+        WifiOnboarding.AddTo(onboarding, WifiName,
+            WifiIncludeUsername ? WifiUser : null,
+            WifiIncludePassword ? WifiPassword : null,
+            WifiSecurityMode, WifiBand);
         return onboarding;
     }
 
@@ -289,17 +288,9 @@ public partial class MainViewModel : WizardViewModelBase
         WifiPasswordVisible = !WifiPasswordVisible;
     }
 
-    private static string? CleanActivationCode(string? input)
-    {
-        if (string.IsNullOrWhiteSpace(input)) return null;
-        var digits = new string(input.Where(char.IsDigit).ToArray());
-        if (digits.Length > 16) digits = digits[..16];
-        return digits.Length == 0 ? null : digits;
-    }
-
     partial void OnActivationCodeChanged(string? value)
     {
-        var cleaned = CleanActivationCode(value);
+        var cleaned = ActivationCodeValidator.Normalize(value);
         if (cleaned != value)
         {
             ActivationCode = cleaned;

@@ -117,7 +117,10 @@ jobs:
           script: |
             dotnet nuget locals all --clear
             # Workload-set versions (e.g. 9.0.308.2) are not the same as SDK versions.
-            dotnet workload install maui-android maui-ios
+            # Pinned so the iOS pack matches the selected Xcode (XcodeVersion variable). Unpinned,
+            # SDK 10.0.403 installed .NET for iOS 27.1, which needs Xcode 27.1 (not on macOS-26).
+            # 10.0.400.1 ships .NET for iOS 26.5, which builds with Xcode 26.6. Bump the two together.
+            dotnet workload install maui-android maui-ios --version 10.0.400.1
 
       - task: Bash@3
         displayName: Restore nuget
