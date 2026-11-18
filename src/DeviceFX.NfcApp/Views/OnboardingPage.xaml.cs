@@ -22,4 +22,12 @@ public partial class OnboardingPage : StepContentPage
             await viewModel.SaveAsync(nameof(viewModel.OnboardingMode));
         }
     }
+
+    // Reject typing or pasting past 16 digits (17 characters with a leading #) instead of
+    // letting the view model trim the code, which would drop a digit the user didn't touch.
+    private void OnActivationCodeTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is Entry entry && !ActivationCodeValidator.IsEditAllowed(e.OldTextValue, e.NewTextValue))
+            entry.Text = e.OldTextValue;
+    }
 }

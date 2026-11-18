@@ -23,6 +23,7 @@
         <Compile Include="..\..\src\DeviceFX.NfcApp\Helpers\CdaSignHttp.cs" Link="CdaSignHttp.cs" />
         <Compile Include="..\..\src\DeviceFX.NfcApp\Helpers\SearchResultValidator.cs" Link="SearchResultValidator.cs" />
         <Compile Include="..\..\src\DeviceFX.NfcApp\Helpers\SearchSelectionTap.cs" Link="SearchSelectionTap.cs" />
+        <Compile Include="..\..\src\DeviceFX.NfcApp\Helpers\WifiOnboarding.cs" Link="WifiOnboarding.cs" />
         <Compile Include="..\..\src\DeviceFX.NfcApp\Model\SearchResult.cs" Link="SearchResult.cs" />
     </ItemGroup>
 

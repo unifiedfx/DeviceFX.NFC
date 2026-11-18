@@ -253,11 +253,10 @@ public partial class MainViewModel : WizardViewModelBase
                 break;
         }
         if (!WifiInclude || !WifiValid()) return onboarding;
-        if(!string.IsNullOrWhiteSpace(WifiName)) onboarding.Add("Network_Name_1_",WifiName);
-        if(WifiIncludeUsername && !string.IsNullOrWhiteSpace(WifiUser)) onboarding.Add("Wi-Fi_User_ID_1_",WifiUser);
-        if(WifiIncludePassword && !string.IsNullOrWhiteSpace(WifiPassword)) onboarding.Add("Wi-Fi_Password_1_",WifiPassword);
-        onboarding.Add("Security_Mode_1_", string.IsNullOrWhiteSpace(WifiSecurityMode) ? "Auto" : WifiSecurityMode);
-        onboarding.Add("Frequency_Band_1_", string.IsNullOrWhiteSpace(WifiBand) ? "Auto" : WifiBand);
+        WifiOnboarding.AddTo(onboarding, WifiName,
+            WifiIncludeUsername ? WifiUser : null,
+            WifiIncludePassword ? WifiPassword : null,
+            WifiSecurityMode, WifiBand);
         return onboarding;
     }
 

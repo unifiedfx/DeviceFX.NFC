@@ -56,5 +56,22 @@ public static class ActivationCodeValidator
         && code[0] == ShortCodePrefix
         && IsAsciiDigits(code.AsSpan(1));
 
+    /// <summary>
+    /// False when an edit would take the code past 16 digits (17 characters with the
+    /// <c>#</c>), so the input can reject it the way a max length would. Without this,
+    /// <see cref="Normalize"/> keeps the first 16 digits, so a digit typed into a full
+    /// code is accepted and the last digit silently dropped. Separators don't count, so
+    /// a pasted XXXX-XXXX-XXXX-XXXX code still fits, and shortening an already over-long
+    /// code is always allowed.
+    /// </summary>
+    public static bool IsEditAllowed(string? oldText, string? newText)
+    {
+        var digits = CountDigits(newText);
+        return digits <= MaxDigits || digits <= CountDigits(oldText);
+    }
+
+    private static int CountDigits(string? text) =>
+        text?.Count(c => CharUnicodeInfo.GetDecimalDigitValue(c) >= 0) ?? 0;
+
     private static bool IsAsciiDigits(ReadOnlySpan<char> value) => !value.ContainsAnyExceptInRange('0', '9');
 }
